@@ -1,6 +1,10 @@
 #ifndef TYPES_H
 #define TYPES_H
 
+#include "listx.h"
+
+typedef void *state_t;
+
 typedef struct pcb_t {
         struct list_head p_list;
         struct list_head p_children;

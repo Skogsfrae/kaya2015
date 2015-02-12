@@ -3,6 +3,8 @@ CPLv2 */
 #ifndef _LISTX_H
 #define _LISTX_H
 
+#include "const.h"
+
 typedef unsigned int    size_t;
 
 #define container_of(ptr, type, member) ({			\

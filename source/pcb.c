@@ -2,7 +2,7 @@
 #include <const.h>
 #include <listx.h>
 
-hidden struct list_head pcbFree=LIST_HEAD_INIT(pcbFree);
+static struct list_head pcbFree=LIST_HEAD_INIT(pcbFree);
 static pcb_t procp[MAXPROC];
 
 void initPcbs()
@@ -25,12 +25,12 @@ pcb_t *allocPcb()
 		return NULL;
 	else
 	{
-		tmp = container_of((pcbFree)->next, typeof(tmp), p_list);
-		list_del(tmp->p_list);
+		tmp = container_of(pcbFree.next, typeof(*tmp), p_list);
+		list_del(&tmp->p_list);
 
-		tmp->p_list = NULL;
-		tmp->p_children = NULL;
-		tmp->psiblings = NULL;
+		//tmp->p_list = NULL;
+		//tmp->p_children = NULL;
+		//tmp->p_siblings = NULL;
 		tmp->p_parent = NULL;
 		tmp->p_cursem = NULL;
 		tmp->p_s = 0;
@@ -58,8 +58,8 @@ pcb_t *removeProcQ(struct list_head *q)
 	{
 		pcb_t *tmp;
 
-		tmp = container_of(q->next, typeof(tmp), p_list);
-		list_del(tmp->p_list);
+		tmp = container_of(q->next, typeof(*tmp), p_list);
+		list_del(&tmp->p_list);
 		
 		return tmp;
 	}
@@ -72,7 +72,7 @@ pcb_t *outProcQ(struct list_head *q, pcb_t *p)
 	list_for_each_entry(tmp, q, p_list)
 		if(tmp == p)
 		{
-			list_del(tmp->p_list);
+			list_del(&tmp->p_list);
 			return p;
 		}
 
@@ -87,7 +87,7 @@ pcb_t *headProcQ(struct list_head *q)
 	{
 		pcb_t *tmp;
 
-		tmp = container_of(q->next, typeof(tmp), p_list);
+		tmp = container_of(q->next, typeof(*tmp), p_list);
 		
 		return tmp;
 	}
