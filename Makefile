@@ -4,7 +4,7 @@ includedir = include/
 sourcedir = source/
 
 CC = arm-none-eabi-gcc
-CFLAGS = -mcpu=arm7tdmi -I $(includedir) -c -o
+CFLAGS = -mcpu=arm7tdmi -I $(includedir) -I /usr/include/uarm -c -o
 LD = arm-none-eabi-ld
 EXECUTABLE = p1test
 CRTSO = /usr/include/uarm/crtso.o

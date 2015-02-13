@@ -1,5 +1,5 @@
 #include <types.h>
-#include <const.h>
+#include <uARMconst.h>
 #include <listx.h>
 
 static struct list_head pcbFree=LIST_HEAD_INIT(pcbFree);
@@ -28,12 +28,14 @@ pcb_t *allocPcb()
 		tmp = container_of(pcbFree.next, typeof(*tmp), p_list);
 		list_del(&tmp->p_list);
 
-		//tmp->p_list = NULL;
-		//tmp->p_children = NULL;
-		//tmp->p_siblings = NULL;
+		INIT_LIST_HEAD(&tmp->p_list);
+		INIT_LIST_HEAD(&tmp->p_children);
+		INIT_LIST_HEAD(&tmp->p_siblings);
+		//tmp->p_list.next = tmp->p_list.prev = NULL;
+		//tmp->p_children.next = tmp->p_children.prev = NULL;
+		//tmp->p_siblings.next = tmp->p_siblings.prev = NULL;
 		tmp->p_parent = NULL;
 		tmp->p_cursem = NULL;
-		tmp->p_s = 0;
 		
 		return tmp;
 	}
@@ -93,4 +95,38 @@ pcb_t *headProcQ(struct list_head *q)
 	}
 }
 
+int emptyChild(struct pcb_t *p)
+{
+	return list_empty(&p->p_children);
+}
 
+void insertChild(struct pcb_t *parent, struct pcb_t *p)
+{
+	list_add(&p->p_siblings, &parent->p_children);
+	p->p_parent = parent;
+}
+
+struct pcb_t *removeChild(struct pcb_t *p)
+{
+	if (list_empty(&p->p_children))
+		return NULL;
+	else
+	{
+		struct pcb_t *tmp;
+		tmp = container_of(p->p_children.next, typeof(*tmp), p_children);
+		list_del(p->p_children.next);
+		return tmp;
+	}
+}
+
+struct pcb_t *outChild(struct pcb_t *p)
+{
+	if(p->p_parent == NULL)
+		return NULL;
+	else
+	{
+		p->p_parent = NULL;
+		list_del(p->p_siblings.prev->next);
+		return p;
+	}
+}

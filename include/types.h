@@ -2,8 +2,7 @@
 #define TYPES_H
 
 #include "listx.h"
-
-typedef void *state_t;
+#include <uARMtypes.h>
 
 typedef struct pcb_t {
         struct list_head p_list;
