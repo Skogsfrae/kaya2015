@@ -19,13 +19,17 @@ kernel.core.uarm: p1test
 	@echo "\nConverting elf to uarm executable"
 	$(CONVERTER) $(CONVFLAGS) p1test
 	
-p1test: pcb.o p1test.o
+p1test: pcb.o asl.o p1test.o
 	@echo "\nLinking all modules"
-	$(LD) $(LDFLAGS) $(EXECUTABLE) $(CRTSO) $(LIBUARM) $(sourcedir)pcb.o $(sourcedir)p1test.o
+	$(LD) $(LDFLAGS) $(EXECUTABLE) $(CRTSO) $(LIBUARM) $(sourcedir)pcb.o $(sourcedir)asl.o $(sourcedir)p1test.o
 	
 pcb.o: $(sourcedir)pcb.c
 	@echo "\nCompiling pcb module"
 	$(CC) $(CFLAGS) $(sourcedir)pcb.o $(sourcedir)pcb.c
+	
+asl.o: $(sourcedir)asl.c
+	@echo "\nCompiling asl module"
+	$(CC) $(CFLAGS) $(sourcedir)asl.o $(sourcedir)asl.c
 	
 p1test.o: $(sourcedir)p1test.c
 	@echo "\nCompiling p1test module"
