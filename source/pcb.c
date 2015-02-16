@@ -21,7 +21,7 @@ pcb_t *allocPcb()
 {
 	pcb_t *tmp;
 
-	if(list_empty(&pcbFree) == TRUE)
+	if(list_empty(&pcbFree))
 		return NULL;
 	else
 	{
@@ -55,7 +55,7 @@ pcb_t *removeProcQ(struct list_head *q)
 {
 	pcb_t *tmp;
 	
-	if(list_empty(q) == TRUE)
+	if(list_empty(q))
 		return NULL;
 		
 	else
