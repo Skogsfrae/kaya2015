@@ -1,6 +1,7 @@
 #include "types.h"
 #include "asl.h"
 #include "pcb.h"
+#include "libuarm.h"
 #include <uARMconst.h>
 
 typedef struct semd_t{
@@ -11,67 +12,127 @@ typedef struct semd_t{
 
 static struct list_head aslh = LIST_HEAD_INIT(aslh); 
 static struct list_head semdFree = LIST_HEAD_INIT(semdFree);
+static struct semd_t semdTable[MAXPROC];
 
 void initASL()
 {
 	int i;
-	static struct semd_t semdTable[MAXPROC];
+	struct semd_t *tmp;
 	
 	for(i=0; i<MAXPROC; i++)
-		list_add(&semdTable[i].s_link, &semdFree);
+	{
+		tmp = &semdTable[i];
+		list_add_tail(&tmp->s_link, &semdFree);
+	}
 }
+
+//int insertBlocked(int *semAdd, struct pcb_t *p)
+//{
+	//struct semd_t *tmp;
+	//struct semd_t *s_tmp;
+	
+	//if(list_empty(&aslh))
+	//{
+		//tprint("Aslh vuota\n");
+		//s_tmp = container_of(semdFree.next, typeof(*s_tmp), s_link);
+		//list_del(&s_tmp->s_link);
+		
+		//s_tmp->s_semAdd = semAdd;
+		
+		//list_add(&s_tmp->s_link, &aslh);
+		
+		//INIT_LIST_HEAD(&s_tmp->s_procq);
+		
+		//list_add_tail(&p->p_list, &s_tmp->s_procq);
+		//p->p_cursem->s_semAdd = semAdd;
+		
+		//return FALSE;
+	//}
+	
+	//list_for_each_entry(tmp, &aslh, s_link)
+		//if(tmp->s_semAdd == semAdd)
+		//{
+			//tprint("Trovato\n");
+			//list_add_tail(&p->p_list, &tmp->s_procq);
+			//p->p_cursem->s_semAdd = semAdd;
+			//return FALSE;
+		//}		
+		//else
+		//{
+			//tprint("Sono nell'else\n");
+			//if(tmp->s_semAdd > semAdd)
+			//{
+				//if(list_empty(&semdFree))
+					//return TRUE;
+				//else
+				//{
+					//s_tmp = container_of(semdFree.next, typeof(*s_tmp), s_link);
+					//list_del(&s_tmp->s_link);
+					
+					//s_tmp->s_semAdd = semAdd;
+					
+					//list_add(&s_tmp->s_link, tmp->s_link.prev);
+		
+					//INIT_LIST_HEAD(&s_tmp->s_procq);
+					
+					//list_add_tail(&p->p_list, &s_tmp->s_procq);
+					//p->p_cursem->s_semAdd = semAdd;
+					
+					//return FALSE;
+				//}	
+			//}
+		//}
+//}
 
 int insertBlocked(int *semAdd, struct pcb_t *p)
 {
-	struct semd_t *tmp;
-	struct semd_t *s_tmp;
+	struct semd_t *tmp, *s_tmp;
 	
+	/* Aslh is empty, so the semaphore is allocated in first position */
 	if(list_empty(&aslh))
 	{
-		s_tmp = container_of(semdFree.next, typeof(*s_tmp), s_link);
-		list_del(&s_tmp->s_link);
-			
-		s_tmp->s_semAdd = semAdd;
-		
-		list_add(&s_tmp->s_link, tmp->s_link.prev);
-		
-		INIT_LIST_HEAD(&s_tmp->s_procq);
-					
-		list_add_tail(&p->p_list, &s_tmp->s_procq);
-		p->p_cursem->s_semAdd = semAdd;
-					
+		tmp = container_of(semdFree.next, typeof(*tmp), s_link);
+		list_del(semdFree.next);
+		INIT_LIST_HEAD(&tmp->s_procq);
+		p->p_cursem->s_semAdd = tmp->s_semAdd;
+		list_add_tail(&p->p_list, &tmp->s_procq);
+		list_add_tail(&tmp->s_link, &aslh);
 		return FALSE;
 	}
 	
-	list_for_each_entry(tmp, &aslh, s_link)
-		if(tmp->s_semAdd == semAdd)
-		{
-			list_add_tail(&p->p_list, &tmp->s_procq);
-			p->p_cursem->s_semAdd = semAdd;
-			return FALSE;
-		}		
-		else
-			if(tmp->s_semAdd > semAdd)
+	/* Let's look for the right semaphore */
+	else
+	{
+		list_for_each_entry(tmp, &aslh, s_link)
+			/* Trovato */
+			if(tmp->s_semAdd == semAdd)
 			{
-				if(list_empty(&semdFree))
-					return TRUE;
-				else
+				p->p_cursem->s_semAdd = tmp->s_semAdd;
+				list_add_tail(&p->p_list, &tmp->s_procq);
+				return FALSE;
+			}
+			else
+			{
+				if(tmp->s_semAdd > semAdd)
 				{
-					s_tmp = container_of(semdFree.next, typeof(*s_tmp), s_link);
-					list_del(&s_tmp->s_link);
-					
-					s_tmp->s_semAdd = semAdd;
-					
-					list_add(&s_tmp->s_link, tmp->s_link.prev);
-		
-					INIT_LIST_HEAD(&s_tmp->s_procq);
-					
-					list_add_tail(&p->p_list, &s_tmp->s_procq);
-					p->p_cursem->s_semAdd = semAdd;
-					
-					return FALSE;
-				}	
-			}			
+					/* semdFree vuota */
+					if(list_empty(&semdFree) == TRUE)
+						return TRUE;
+					else
+					{
+						/* Alloca nuovo semaforo */
+						s_tmp = container_of(semdFree.next, typeof(*s_tmp), s_link);
+						list_del(semdFree.next);
+						INIT_LIST_HEAD(&s_tmp->s_procq);
+						s_tmp->s_semAdd = semAdd;
+						p->p_cursem->s_semAdd = s_tmp->s_semAdd;
+						list_add_tail(&p->p_list, &s_tmp->s_procq);
+						list_add(&s_tmp->s_link, tmp->s_link.prev);
+						return FALSE;
+					}
+				}
+			}
+	}
 }
 
 struct pcb_t *removeBlocked(int *semAdd)
@@ -82,16 +143,21 @@ struct pcb_t *removeBlocked(int *semAdd)
 	list_for_each_entry(tmp, &aslh, s_link)
 		if(tmp->s_semAdd == semAdd)
 		{
+			tprint("Semaforo trovato\n");
 			p_tmp = removeProcQ(&tmp->s_procq);
 			if(list_empty(&tmp->s_procq))
 			{
+				tprint("Rimuovo il semaforo\n");
 				list_del(&tmp->s_link);
 				list_add(&tmp->s_link, &semdFree);
 			}
 			
 			return p_tmp;
-		}		
+		}
 		else
+		{
+			tprint("Semaforo non trovato\n");
 			if(tmp->s_semAdd > semAdd)
 				return NULL;
+		}
 }

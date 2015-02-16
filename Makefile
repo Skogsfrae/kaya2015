@@ -37,4 +37,4 @@ p1test.o: $(sourcedir)p1test.c
 	
 clean:
 	@echo "\nCleaning object files"
-	rm -rf $(sourcedir)*.o
+	rm -rf $(sourcedir)*.o *.uarm

@@ -53,16 +53,15 @@ void insertProcQ(struct list_head *q, pcb_t *p)
 
 pcb_t *removeProcQ(struct list_head *q)
 {
+	pcb_t *tmp;
+	
 	if(list_empty(q) == TRUE)
 		return NULL;
-	
+		
 	else
 	{
-		pcb_t *tmp;
-
 		tmp = container_of(q->next, typeof(*tmp), p_list);
 		list_del(&tmp->p_list);
-		
 		return tmp;
 	}
 }
@@ -70,6 +69,9 @@ pcb_t *removeProcQ(struct list_head *q)
 pcb_t *outProcQ(struct list_head *q, pcb_t *p)
 {
 	pcb_t *tmp;
+
+	if(list_empty(q))
+		return NULL;
 
 	list_for_each_entry(tmp, q, p_list)
 		if(tmp == p)
@@ -83,14 +85,13 @@ pcb_t *outProcQ(struct list_head *q, pcb_t *p)
 
 pcb_t *headProcQ(struct list_head *q)
 {
-	if(list_empty(q) == TRUE)
+	pcb_t *tmp;
+
+	if(list_empty(q))
 		return NULL;
 	else
 	{
-		pcb_t *tmp;
-
-		tmp = container_of(q->next, typeof(*tmp), p_list);
-		
+		tmp = container_of(q->next, typeof(*tmp), p_list);	
 		return tmp;
 	}
 }
@@ -108,11 +109,12 @@ void insertChild(struct pcb_t *parent, struct pcb_t *p)
 
 struct pcb_t *removeChild(struct pcb_t *p)
 {
+	struct pcb_t *tmp;
+
 	if (list_empty(&p->p_children))
 		return NULL;
 	else
 	{
-		struct pcb_t *tmp;
 		tmp = container_of(p->p_children.next, typeof(*tmp), p_children);
 		list_del(p->p_children.next);
 		return tmp;

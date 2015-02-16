@@ -218,6 +218,7 @@ int main() {
 
 	addokbuf("removeBlocked() test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
+		tprint("contami\n");
 		q = removeBlocked(&sem[i]);
 		if (q == NULL)
 			
