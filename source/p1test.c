@@ -218,10 +218,8 @@ int main() {
 
 	addokbuf("removeBlocked() test started   \n");
 	for (i = 10; i< MAXPROC; i++) {
-		tprint("contami\n");
 		q = removeBlocked(&sem[i]);
-		if (q == NULL)
-			
+		if (q == NULL)			
 			adderrbuf("removeBlocked(): wouldn't remove   ");
 		if (q != procp[i])
 			adderrbuf("removeBlocked(): removed wrong element   ");
@@ -232,31 +230,31 @@ int main() {
 		adderrbuf("removeBlocked(): removed nonexistent blocked proc   ");
 	addokbuf("insertBlocked() and removeBlocked() ok   \n");
 
-	//if (headBlocked(&sem[11]) != NULL)
-		//adderrbuf("headBlocked(): nonNULL for a nonexistent queue   ");
-	//if ((q = headBlocked(&sem[9])) == NULL)
-		//adderrbuf("headBlocked(1): NULL for an existent queue   ");
-	//if (q != procp[9])
-		//adderrbuf("headBlocked(1): wrong process returned   ");
-	//p = outBlocked(q);
-	//if (p != q)
-		//adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
-	//q = headBlocked(&sem[9]);
-	//if (q == NULL)
-		//adderrbuf("headBlocked(2): NULL for an existent queue   ");
-	//if (q != procp[19])
-		//adderrbuf("headBlocked(2): wrong process returned   ");
-	//p = outBlocked(q);
-	//if (p != q)
-		//adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
-	//p = outBlocked(q);
-	//if (p != NULL)
-		//adderrbuf("outBlocked(): removed same process twice.");
-	//if (headBlocked(&sem[9]) != NULL)
-		//adderrbuf("out/headBlocked: unexpected nonempty queue   ");
-	//addokbuf("headBlocked() and outBlocked() ok   \n");
-	//addokbuf("ASL module ok   \n");
-	//addokbuf("So Long and Thanks for All the Fish\n");
+	if (headBlocked(&sem[11]) != NULL)
+		adderrbuf("headBlocked(): nonNULL for a nonexistent queue   ");
+	if ((q = headBlocked(&sem[9])) == NULL)
+		adderrbuf("headBlocked(1): NULL for an existent queue   ");
+	if (q != procp[9])
+		adderrbuf("headBlocked(1): wrong process returned   ");
+	p = outBlocked(q);
+	if (p != q)
+		adderrbuf("outBlocked(1): couldn't remove from valid queue   ");
+	q = headBlocked(&sem[9]);
+	if (q == NULL)
+		adderrbuf("headBlocked(2): NULL for an existent queue   ");
+	if (q != procp[19])
+		adderrbuf("headBlocked(2): wrong process returned   ");
+	p = outBlocked(q);
+	if (p != q)
+		adderrbuf("outBlocked(2): couldn't remove from valid queue   ");
+	p = outBlocked(q);
+	if (p != NULL)
+		adderrbuf("outBlocked(): removed same process twice.");
+	if (headBlocked(&sem[9]) != NULL)
+		adderrbuf("out/headBlocked: unexpected nonempty queue   ");
+	addokbuf("headBlocked() and outBlocked() ok   \n");
+	addokbuf("ASL module ok   \n");
+	addokbuf("So Long and Thanks for All the Fish\n");
 
 	return 0;
 }

@@ -27,6 +27,7 @@ void initASL()
 	}
 }
 
+/* Cerca il semaforo semAdd */
 struct semd_t *lookForSemaphore(int *semAdd)
 {
 	struct semd_t *tmp;
@@ -280,6 +281,8 @@ struct pcb_t *headBlocked(int *semAdd)
 	struct semd_t *tmp;
 	
 	tmp = lookForSemaphore(semAdd);
+	if(tmp == NULL)
+		return NULL;
 	
-	return removeProcQ(&tmp->s_procq);
+	return headProcQ(&tmp->s_procq);
 }
