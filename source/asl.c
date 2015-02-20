@@ -1,7 +1,5 @@
 #include "types.h"
-#include "asl.h"
 #include "pcb.h"
-#include "libuarm.h"
 #include "listx.h"
 #include <uARMconst.h>
 
