@@ -31,9 +31,6 @@ pcb_t *allocPcb()
 		INIT_LIST_HEAD(&tmp->p_list);
 		INIT_LIST_HEAD(&tmp->p_children);
 		INIT_LIST_HEAD(&tmp->p_siblings);
-		//tmp->p_list.next = tmp->p_list.prev = NULL;
-		//tmp->p_children.next = tmp->p_children.prev = NULL;
-		//tmp->p_siblings.next = tmp->p_siblings.prev = NULL;
 		tmp->p_parent = NULL;
 		tmp->p_cursem = NULL;
 		
