@@ -114,6 +114,7 @@ struct pcb_t *removeChild(struct pcb_t *p)
 	{
 		tmp = container_of(p->p_children.next, typeof(*tmp), p_children);
 		list_del(p->p_children.next);
+		tmp->p_parent = NULL;
 		return tmp;
 	}
 }
