@@ -53,7 +53,6 @@ int insertBlocked(int *semAdd, struct pcb_t *p)
 		p->p_cursem->s_semAdd = semAdd;
 		insertProcQ(&tmp->s_procq, p);
 		list_add_tail(&tmp->s_link, &aslh);
-		return FALSE;
 	}
 	
 	/* Let's look for the right semaphore */
@@ -64,7 +63,6 @@ int insertBlocked(int *semAdd, struct pcb_t *p)
 		{
 			p->p_cursem->s_semAdd = semAdd;
 			insertProcQ(&tmp->s_procq, p);
-			return FALSE;
 		}
 		else
 		{
@@ -82,11 +80,11 @@ int insertBlocked(int *semAdd, struct pcb_t *p)
 				p->p_cursem->s_semAdd = semAdd;
 				insertProcQ(&s_tmp->s_procq, p);
 				list_add_tail(&s_tmp->s_link, &tmp->s_link);
-				return FALSE;
 			}
 		}
 
 	}
+	return FALSE;
 }
 
 struct pcb_t *removeBlocked(int *semAdd)
@@ -125,10 +123,18 @@ struct pcb_t *outBlocked(struct pcb_t *p)
 struct pcb_t *headBlocked(int *semAdd)
 {
 	struct semd_t *tmp;
+	struct pcb_t *ptmp;
 	
 	tmp = lookForSemaphore(semAdd);
 	if(tmp->s_semAdd != semAdd)
 		return NULL;
+
+	ptmp = headProcQ(&tmp->s_procq);
+	if(list_empty(&tmp->s_procq))
+	  {
+	    list_del(&tmp->s_link);
+	    list_add(&tmp->s_link, &semdFree);
+	  }
 	
-	return headProcQ(&tmp->s_procq);
+	return ptmp;
 }
