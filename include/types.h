@@ -11,6 +11,7 @@ typedef struct pcb_t {
         struct pcb_t *p_parent;
         struct semd_t *p_cursem;
         state_t p_s;
+	pid_t pid;
 } pcb_t;
 
 #endif
