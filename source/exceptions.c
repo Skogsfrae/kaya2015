@@ -7,9 +7,8 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 {
 	pcb_t *newp;
 
-	/* Controllo sul prio */
-
-	if( (newp = allocPcb()) == NULL )
+	/* Controllo risorse/priorità */
+	if( ((newp = allocPcb()) == NULL) && (*prio == PRIO_IDLE) )
 		/* No pcb avaleable */
 		return -1;
 
