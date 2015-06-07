@@ -88,3 +88,12 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	   newp->pid = lastpid; */
 	return newp->pid;
 }
+
+void SYSCALL(VERHOGEN, int *semaddr, int weight){
+  *semaddr += weight;
+}
+
+void SYSCALL(PASSEREN, int *semaddr, int weight){
+  *semaddr -= weight;
+}
+
