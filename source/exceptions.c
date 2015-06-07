@@ -1,11 +1,16 @@
 #include <pcb.h>
 
-/* Soluzione adottata nella versione 0.01 di linux */
-static pid_t lastpid = -1; /* -1 no process executing */
+/* Soluzione adottata nella versione 0.01 di linux
+static pid_t lastpid = -1;  -1 no process executing */
+unsigned int pid_bitmap = 0;
+unsigned int free_pidmap = MAXPROC;
+pid_t last_pid = 0, last_freed_pid = 0;
+pcb_t *pidmap[MAXPROC];
 
 int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 {
 	pcb_t *newp;
+	unsigned int temp_bitmap, i = 1;
 
 	/* Controllo risorse/priorità */
 	if( ((newp = allocPcb()) == NULL) && (*prio == PRIO_IDLE) )
@@ -36,7 +41,50 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	newp->p_s.TOD_Hi = statep->TOD_Hi;
 	newp->p_s.TOD_Low = statep->TOD_Low;
 
-	lastpid++;
-	newp->pid = lastpid;
+	/* it means there are no pids used (no running programs) */
+	/* if(!pid_bitmap){ */
+	/*   newp->pid = 1; */
+	/*   pid_bitmap &= 1; */
+	/*   last_pid = 1; */
+	/*   free_pidmap ^= last_pid; */
+	/*   pidmap[last_pid] = newp; */
+	/* } */
+
+	/* else{ */
+	
+	/* Vale sia come caso base (primo programma da eseguire),
+	** sia come caso in cui incrementalmente vengono creati processi */
+	if(last_pid == last_freed_pid){
+	  tmp_bitmap = pid_bitmap;
+	  pid_bitmap <<= 1;
+	  pid_bitmap ^= 1;
+	  tmp_bitmap = pid_bitmap ^ tmp_bitmap; /* extracting new pid */
+	  free_pidmap ^= tmp_bitmap;
+	  newp->pid = tmp_bitmap;
+	  last_pid = tmp_bitmap;
+	  pidmap[last_pid] = newp;
+	}
+
+	/* Riciclo pid */
+	else{
+	  newp->pid = last_freed_pid;
+	  last_pid = last_freed_pid;
+	  free_pidmap ^= last_freed_pid;
+	  pid_bitmap ^= last_pid;
+	  pidmap[last_pid] = newp;
+	  tmp_bitmap = pid_bitmap ^ (pid_bitmap >> 1); /* limito la ricerca*/
+	  while(i != tmp_bitmap){                      /* del nuovo freepid*/
+	    if(i & free_pidmap)
+	      break;
+	    else
+	      i <<= 1;
+	  }
+	  last_freed_pid = i;
+	}
+	/* } */
+	
+	
+	/* lastpid++;
+	   newp->pid = lastpid; */
 	return newp->pid;
 }
