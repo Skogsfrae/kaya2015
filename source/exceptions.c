@@ -7,6 +7,7 @@ unsigned int free_pidmap = MAXPROC;
 pid_t last_pid = 0, last_freed_pid = 0;
 pcb_t *pidmap[MAXPROC];
 
+/* Bisogna aggiungere la priorita' */
 int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 {
 	pcb_t *newp;
@@ -87,6 +88,42 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	/* lastpid++;
 	   newp->pid = lastpid; */
 	return newp->pid;
+}
+
+pcb_t *removeChildren(pcb_t *parent){
+  while(emptyChild(parent))
+    freePcb(removeChildren(parent->p_children));
+  
+  if(parent->pid == last_pid)
+    last_pid = 0;
+  pid_bitmap ^= parent->pid;
+  free_pidmap ^= parent->pid;
+  last_freed_pid = parent->pid;
+  
+  return outChild(parent);
+}
+
+/* Bisogna valutare il caso che il processo sia in una coda di un semaforo */
+void SYSCALL(TEMINATEPROCESS, pid_t pid){
+  pcb_t *parent, *child;
+
+  parent = pidmap[pid];
+  if(emptyChild(parent)){
+    if(pid == last_pid)
+      last_pid = 0;
+    pid_bitmap ^= pid;
+    free_pidmap ^= pid;
+    last_freed_pid = pid;
+    freePcb(parent);
+  }
+  else{
+    if(pid == last_pid)
+      last_pid = 0;
+    pid_bitmap ^= pid;
+    free_pidmap ^= pid;
+    last_freed_pid = pid;
+    freePcb(removeChildren(parent));
+  }
 }
 
 void SYSCALL(VERHOGEN, int *semaddr, int weight){
