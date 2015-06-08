@@ -1,4 +1,8 @@
 #include <pcb.h>
+#include <asl.h>
+#include <listx.h>
+#include <const.h>
+#include <scheduler.h>
 
 /* Soluzione adottata nella versione 0.01 di linux
 static pid_t lastpid = -1;  -1 no process executing */
@@ -64,6 +68,12 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	newp->p_s.TOD_Hi = statep->TOD_Hi;
 	newp->p_s.TOD_Low = statep->TOD_Low;
 
+	/* Set timers */
+	newp->start_time = getTODHI
+	newp->elapsed_time = 0;
+	newp->user_time = 0;
+	newp->global_rime = 0;
+
 	/* it means there are no pids used (no running programs) */
 	/* if(!pid_bitmap){ */
 	/*   newp->pid = 1; */
@@ -109,6 +119,24 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	
 	/* lastpid++;
 	   newp->pid = lastpid; */
+
+	/* Adding to proper queue */
+	switch(*prio){
+	case PRIO_LOW:
+	  list_add(newp->p_list, p_low);
+	  break;
+	case PRIO_NORM:
+	  list_add(newp->p_list, p_norm);
+	  break;
+	case PRIO_HIGH:
+	  list_add(newp->p_list, p_high);
+	  break;
+	}
+
+	newp->sem_wait = 0;
+	newp->state = READY;
+	
+	pc_count++;
 	return newp->pid;
 }
 
@@ -154,13 +182,25 @@ void SYSCALL(TEMINATEPROCESS, pid_t pid){
 }
 
 void SYSCALL(VERHOGEN, int *semaddr, int weight){
+  pcb_t *tmp;
   *semaddr += weight;
+  if((tmp = headBlocked(semaddr)) == NULL)
+    return;
+  if(tmp->sem_wait >= *semaddr){
+    tmp->state = READY;
+    tmp->sem_wait = 0;
+    outBlocked(tmp);
+  }
 }
 
 void SYSCALL(PASSEREN, int *semaddr, int weight){
   *semaddr -= weight;
+  insertBlocked(semaddr, current);
+  current->state = WAIT;
+  current->sem_wait = weight;
 }
 
 void SYSCALL (GETCPUTIME, cputime_t *global, cputime_t *user){
-
+  *global = current->global_time;
+  *user = current->user_time;
 }
