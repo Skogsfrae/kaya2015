@@ -36,7 +36,7 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 
 	/* Controllo risorse/priorità */
 	if( ((newp = allocPcb()) == NULL) && (*prio == PRIO_IDLE) )
-		/* No pcb avaleable */
+		/* No pcb available */
 		return -1;
 
 	/* Copy statep */
@@ -160,3 +160,6 @@ void SYSCALL(PASSEREN, int *semaddr, int weight){
   *semaddr -= weight;
 }
 
+void SYSCALL (GETCPUTIME, cputime_t *global, cputime_t *user){
+
+}
