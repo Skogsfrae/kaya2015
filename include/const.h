@@ -12,6 +12,10 @@
 
 #define HIDDEN static
 
+#define RUNNING 0
+#define READY 1
+#define WAIT 2
+
 typedef unsigned int U32;
 typedef signed int S32;
 typedef unsigned char U8;
