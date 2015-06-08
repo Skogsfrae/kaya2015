@@ -7,19 +7,20 @@ unsigned int free_pidmap = MAXPROC;
 pid_t last_pid = 0, last_freed_pid = 0;
 pcb_t *pidmap[MAXPROC];
 
-int get_pid_num(int pid){
-  int count;
+/* Gets pid number from pid mask */
+int get_pid_num(int pidmask){
+  int pid;
 
-  if(pid == 0)
+  if(pidmask == 0)
     return 0;
 
-  while(pid > 0){
-    if(pid&1 == 0)
-      count++;
-    pid >>=1;
+  while(pidmask > 0){
+    if(pidmask&1 == 0)
+      pid++;
+    pidmask >>=1;
   }
 
-  return count;
+  return pid++;
 }
 
 int get_pid_mask(int pid){
