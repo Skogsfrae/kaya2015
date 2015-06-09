@@ -1,5 +1,6 @@
 #include <pcb.h>
 #include <asl.h>
+#include <time.h>
 #include <listx.h>
 #include <const.h>
 #include <scheduler.h>
@@ -69,10 +70,10 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	newp->p_s.TOD_Low = statep->TOD_Low;
 
 	/* Set timers */
-	newp->start_time = getTODHI
-	newp->elapsed_time = 0;
-	newp->user_time = 0;
-	newp->global_rime = 0;
+        gettimeofday(&(newp->start_time));
+	reset_timer(&(newp->elapsed_time));
+	reset_timer(&(newp->user_time));
+	reset_timer(&(newp->global_rime));
 
 	/* it means there are no pids used (no running programs) */
 	/* if(!pid_bitmap){ */
