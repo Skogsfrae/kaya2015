@@ -5,6 +5,11 @@
 #include <uARMtypes.h>
 #include <const.h>
 
+typedef struct time_t{
+  cputime_t upper_time;
+  cputime_t lower_time;
+} time_t;
+
 typedef struct pcb_t {
   struct list_head p_list;
   struct list_head p_children;
@@ -14,10 +19,12 @@ typedef struct pcb_t {
   state_t p_s;
   /* Added fields */
   pid_t pid;
-  cputime_t start_time;
-  cputime_t elapsed_time;  /* Time last task ticked */
-  cputime_t user_time;
-  cputime_t global_time;
+  
+  time_t start_time;
+  time_t elapsed_time;  /* Time task ticked last */
+  time_t user_time;
+  time_t global_time;
+  
   int state;
   int semw_wait;
 } pcb_t;
