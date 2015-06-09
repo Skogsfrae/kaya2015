@@ -28,6 +28,7 @@ int get_pid_num(int pidmask){
   return pid++;
 }
 
+/* Gets pid mask from pid number */
 int get_pid_mask(int pid){
   int mask = 1;
 
@@ -73,7 +74,7 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
         gettimeofday(&(newp->start_time));
 	reset_timer(&(newp->elapsed_time));
 	reset_timer(&(newp->user_time));
-	reset_timer(&(newp->global_rime));
+	reset_timer(&(newp->global_time));
 
 	/* it means there are no pids used (no running programs) */
 	/* if(!pid_bitmap){ */
@@ -138,13 +139,14 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	newp->state = READY;
 	
 	pc_count++;
+	current->p_s.a1 = newp->pid;
 	return newp->pid;
 }
 
-pcb_t *removeChildren(pcb_t *parent){
+pcb_t *terminate_children(pcb_t *parent){
   int pidmask = get_pid_mask(parent->pid);
   while(emptyChild(parent))
-    freePcb(removeChildren(parent->p_children));
+    freePcb(terminate_children(parent->p_children));
   
   if(pidmask == last_pid)
     last_pid = 0;
@@ -152,7 +154,15 @@ pcb_t *removeChildren(pcb_t *parent){
   free_pidmap ^= pidmask;
   last_freed_pid = pidmask;
   pidmap[parent->pid] = NULL;
-  
+
+  /* Aggiusto il valore del semaforo su cui è in attesa facendo una V */
+  if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
+    *parent->p_cursem->semaddr += parent->sem_wait;
+    outBlocked(parent);
+    sb_count--;
+  }
+
+  pc_count--;
   return outChild(parent);
 }
 
@@ -163,22 +173,26 @@ void SYSCALL(TEMINATEPROCESS, pid_t pid){
 
   parent = pidmap[pid];
   outChild(parent);
-  if(emptyChild(parent)){
-    if(pidmask == last_pid)
-      last_pid = 0;
-    pid_bitmap ^= pidmask;
-    free_pidmap ^= pidmask;
-    last_freed_pid = pidmask;
-    freePcb(parent);
+
+  /* Se ci sono dei figli killali */
+  if(!emptyChild(parent))
+    freePcb(terminate_children(parent));
+  
+  if(pidmask == last_pid)
+    last_pid = 0;
+  pid_bitmap ^= pidmask;
+  free_pidmap ^= pidmask;
+  last_freed_pid = pidmask;
+
+  /* Aggiusto il valore del semaforo */
+  if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
+    *parent->p_cursem->semaddr += parent->sem_wait;
+    outBlocked(parent);
+    sb_count--;
   }
-  else{
-    if(pidmask == last_pid)
-      last_pid = 0;
-    pid_bitmap ^= pidmask;
-    free_pidmap ^= pidmask;
-    last_freed_pid = pidmask;
-    freePcb(removeChildren(parent));
-  }
+  
+  freePcb(parent);
+  pc_count--;
   pidmap[pid] = NULL;
 }
 
@@ -191,6 +205,7 @@ void SYSCALL(VERHOGEN, int *semaddr, int weight){
     tmp->state = READY;
     tmp->sem_wait = 0;
     outBlocked(tmp);
+    sb_count--;
   }
 }
 
@@ -199,9 +214,21 @@ void SYSCALL(PASSEREN, int *semaddr, int weight){
   insertBlocked(semaddr, current);
   current->state = WAIT;
   current->sem_wait = weight;
+  sb_count++;
+  scheduler();
 }
 
-void SYSCALL (GETCPUTIME, cputime_t *global, cputime_t *user){
+void SYSCALL(GETCPUTIME, cputime_t *global, cputime_t *user){
   *global = current->global_time;
   *user = current->user_time;
+}
+
+pid_t SYSCALL(GETPID){
+  current->p_s.a1 = current->pid;
+  return current->pid;
+}
+
+pid_t SYSCALL(GETPPID){
+  current->p_s.a1 = current->p_parent->pid;
+  return current->p_parent->pid;
 }
