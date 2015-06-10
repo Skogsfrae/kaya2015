@@ -6,12 +6,6 @@
 
 void scheduler(void){
   struct time_t temp, tick, tod;
-  
-  /* deve farlo il nucleo */
-  /* p_low = LIST_HEAD_INIT(p_low); */
-  /* p_norm = LIST_HEAD_INIT(p_norm); */
-  /* p_high = LIST_HEAD_INIT(p_high); */
-  /* p_idle = LIST_HEAD_INIT(p_idle); */
 
   while(1){
     /* 
@@ -34,30 +28,44 @@ void scheduler(void){
 
     current->state = READY;
 
-    if( (current = headProcQ(&p_high)) != NULL && (current->state != WAIT)){
+    if( (current = headProcQ(&p_high))
+	!= NULL && (current->state != WAIT)){
       outProcQ(&p_high, current);
       insertProcQ(&p_high, current);
       timecpy(&current->elapsed_time, &tod);
       current->state = RUNNING;
     }
     else{
-      if( (current = headProcQ(&p_norm)) != NULL && (current->state != WAIT)){
+      if( (current = headProcQ(&p_norm))
+	  != NULL && (current->state != WAIT)){
 	outProcQ(&p_norm, current);
 	insertProcQ(&p_norm, current);
 	timecpy(&current->elapsed_time, &tod);
 	current->state = RUNNING;
       }
       else{
-	if( (current = headProcQ(&p_low)) != NULL && (current->state != WAIT)){
+	if( (current = headProcQ(&p_low))
+	    != NULL && (current->state != WAIT)){
 	  outProcQ(&p_low, current);
 	  insertProcQ(&p_low, current);
 	  timecpy(&current->elapsed_time, &tod);
 	  current->state = RUNNING;
 	}
 	else{
-	  current = headProcQ(&p_idle);
-	  timecpy(&current->elapsed_time, &tod);
-	  current->state = RUNNING;
+	  /* shut down */
+	  if(pc_count == 0)
+	    HALT();
+	  else{
+	    /* deadlock */
+	    if(pc_count > 0 && sb_count == 0)
+	      PANIC();
+	    /* idle */
+	    else{
+	      current = headProcQ(&p_idle);
+	      timecpy(&current->elapsed_time, &tod);
+	      current->state = RUNNING;
+	    }
+	  }
 	}
       }
     }

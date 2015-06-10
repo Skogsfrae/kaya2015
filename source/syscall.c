@@ -36,7 +36,7 @@ int get_pid_mask(int pid){
 }
 
 /* Bisogna aggiungere la priorita' */
-int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
+int create_process(state_t *statep, priority_enum *prio)
 {
 	pcb_t *newp;
 	unsigned int temp_bitmap, i = 1;
@@ -139,7 +139,6 @@ int SYSCALL(CREATEPROCESS, state_t *statep, priority_enum *prio)
 	newp->state = READY;
 	
 	pc_count++;
-	current->p_s.a1 = newp->pid;
 	return newp->pid;
 }
 
@@ -157,8 +156,7 @@ pcb_t *terminate_children(pcb_t *parent){
 
   /* Aggiusto il valore del semaforo su cui è in attesa facendo una V */
   if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
-    *parent->p_cursem->semaddr += parent->sem_wait;
-    outBlocked(parent);
+    verhogen(parent->p_cursem->semaddr, parent->sem_wait)
     sb_count--;
   }
 
@@ -167,7 +165,7 @@ pcb_t *terminate_children(pcb_t *parent){
 }
 
 /* Bisogna valutare il caso che il processo sia in una coda di un semaforo */
-void SYSCALL(TEMINATEPROCESS, pid_t pid){
+void terminate_process(pid_t pid){
   pcb_t *parent, *child;
   int pidmask = get_pid_mask(pid);
 
@@ -186,8 +184,7 @@ void SYSCALL(TEMINATEPROCESS, pid_t pid){
 
   /* Aggiusto il valore del semaforo */
   if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
-    *parent->p_cursem->semaddr += parent->sem_wait;
-    outBlocked(parent);
+    verhogen(parent->p_cursem->semaddr, parent->sem_wait);
     sb_count--;
   }
   
@@ -196,7 +193,7 @@ void SYSCALL(TEMINATEPROCESS, pid_t pid){
   pidmap[pid] = NULL;
 }
 
-void SYSCALL(VERHOGEN, int *semaddr, int weight){
+void verhogen(int *semaddr, int weight){
   pcb_t *tmp;
   *semaddr += weight;
   if((tmp = headBlocked(semaddr)) == NULL)
@@ -209,7 +206,7 @@ void SYSCALL(VERHOGEN, int *semaddr, int weight){
   }
 }
 
-void SYSCALL(PASSEREN, int *semaddr, int weight){
+void passeren(int *semaddr, int weight){
   *semaddr -= weight;
   insertBlocked(semaddr, current);
   current->state = WAIT;
@@ -218,17 +215,21 @@ void SYSCALL(PASSEREN, int *semaddr, int weight){
   scheduler();
 }
 
-void SYSCALL(GETCPUTIME, cputime_t *global, cputime_t *user){
-  *global = current->global_time;
-  *user = current->user_time;
+void specify_exception_state_vector(state_t **state_vector){
+
 }
 
-pid_t SYSCALL(GETPID){
+void get_cpu_time(cputime_t *global, cputime_t *user){
+  *global = current->global_time.lower_time;
+  *user = current->user_time.lower_time;
+}
+
+pid_t get_pid(void){
   current->p_s.a1 = current->pid;
   return current->pid;
 }
 
-pid_t SYSCALL(GETPPID){
+pid_t get_ppid(void){
   current->p_s.a1 = current->p_parent->pid;
   return current->p_parent->pid;
 }
