@@ -16,8 +16,6 @@
 #define READY 1
 #define WAIT 2
 
-#define TICK_TIME 5
-
 typedef unsigned int U32;
 typedef signed int S32;
 typedef unsigned char U8;
