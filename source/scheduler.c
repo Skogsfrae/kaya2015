@@ -6,7 +6,7 @@
 #include <scheduler.h>
 
 void scheduler(void){
-  struct time_t temp, tick, tod;
+  struct cputime_t temp, tick, tod;
 
   while(1){
     /* 
@@ -17,14 +17,15 @@ void scheduler(void){
      * 5 lanciare il prossimo processo (ldst)
      */
 
-    reset_timer(&tod);
-    reset_timer(&temp);
-    gettimeofday(&tod);
-    timer_sub(&tod, &current->elapsed_time, &tick);
-    timer_add(&current->global_time, &tick, &temp);
-    timecpy(&current->global_time, &temp);
-    timer_add(&current->user_time, &tick, &temp);
-    timecpy(&current->user_time, &temp);
+    tod = 0;
+    temp = 0;
+    tod = getTODLO();
+    current->global_time += tod - current->elapsed_time;
+    /* timer_sub(&tod, &current->elapsed_time, &tick); */
+    /* timer_add(&current->global_time, &tick, &temp); */
+    /* timecpy(&current->global_time, &temp); */
+    /* timer_add(&current->user_time, &tick, &temp); */
+    /* timecpy(&current->user_time, &temp); */
     /* timecpy(&current->elapsed_time, &tod); */
 
     if(current->state != WAIT)
@@ -34,7 +35,7 @@ void scheduler(void){
 	!= NULL && (current->state != WAIT)){
       outProcQ(&p_high, current);
       insertProcQ(&p_high, current);
-      timecpy(&current->elapsed_time, &tod);
+      current->elapsed_time = tod;
       current->state = RUNNING;
     }
     else{
@@ -42,7 +43,7 @@ void scheduler(void){
 	  != NULL && (current->state != WAIT)){
 	outProcQ(&p_norm, current);
 	insertProcQ(&p_norm, current);
-	timecpy(&current->elapsed_time, &tod);
+	current->elapsed_time = tod;
 	current->state = RUNNING;
       }
       else{
@@ -50,7 +51,7 @@ void scheduler(void){
 	    != NULL && (current->state != WAIT)){
 	  outProcQ(&p_low, current);
 	  insertProcQ(&p_low, current);
-	  timecpy(&current->elapsed_time, &tod);
+	  current->elapsed_time = tod;
 	  current->state = RUNNING;
 	}
 	else{
@@ -64,7 +65,7 @@ void scheduler(void){
 	    /* idle */
 	    else{
 	      current = headProcQ(&p_idle);
-	      timecpy(&current->elapsed_time, &tod);
+	      current->elapsed_time = tod;
 	      current->state = RUNNING;
 	    }
 	  }
