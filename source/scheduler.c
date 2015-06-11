@@ -2,6 +2,7 @@
 #include <const.h>
 #include <types.h>
 #include <libuarm.h>
+#include <uARMconst.h>
 #include <scheduler.h>
 
 void scheduler(void){
@@ -24,9 +25,10 @@ void scheduler(void){
     timecpy(&current->global_time, &temp);
     timer_add(&current->user_time, &tick, &temp);
     timecpy(&current->user_time, &temp);
-    timecpy(&current->elapsed_time, &tod);
+    /* timecpy(&current->elapsed_time, &tod); */
 
-    current->state = READY;
+    if(current->state != WAIT)
+      current->state = READY;
 
     if( (current = headProcQ(&p_high))
 	!= NULL && (current->state != WAIT)){
@@ -70,7 +72,7 @@ void scheduler(void){
       }
     }
 
-    setTIMER(TICK_TIME);
+    setTIMER(SCHED_TIME_SLICE);
     LDST(&current->p_s)
   }
 }

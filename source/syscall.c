@@ -225,11 +225,9 @@ void get_cpu_time(cputime_t *global, cputime_t *user){
 }
 
 pid_t get_pid(void){
-  current->p_s.a1 = current->pid;
   return current->pid;
 }
 
 pid_t get_ppid(void){
-  current->p_s.a1 = current->p_parent->pid;
   return current->p_parent->pid;
 }

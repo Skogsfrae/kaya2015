@@ -22,6 +22,7 @@ typedef struct pcb_t {
   
   time_t start_time;
   time_t elapsed_time;  /* Time task ticked last */
+  time_t kernel_time;
   time_t user_time;
   time_t global_time;
   
