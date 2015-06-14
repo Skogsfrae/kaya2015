@@ -25,6 +25,7 @@ typedef struct pcb_t {
   cputime_t kernel_time;
   cputime_t global_time;
 
+  state_t excvector[6];
   int bool_excvector;
   
   int state;

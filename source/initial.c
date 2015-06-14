@@ -4,6 +4,7 @@
 #include <listx.h>
 #include <uARMtypes.h>
 #include <scheduler.h>
+#include <exceptions.h>
 
 extern void test();
 

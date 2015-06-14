@@ -135,7 +135,9 @@ int create_process(state_t *statep, priority_enum *prio)
     break;
   }
 
-  newp->bool_excvector = FALSE;
+  for(i=0; i<6; i++)
+    newp->excvector[i] = NULL;
+  new->bool_excvector = FALSE;
 
   newp->sem_wait = 0;
   newp->state = READY;
@@ -220,33 +222,34 @@ void passeren(int *semaddr, int weight){
 void specify_exception_state_vector(state_t **state_vector){
   int i;
 
-  if(current->bool_excvector == TRUE)
+  if(current->excvector[0] != NULL)
     terminate_process(current->pid);
 
   for(i=0; i<6; i++){
-    switch(i){
-    case 0:
-      state_vector[i] = TLB_OLDAREA;
-      break;
-    case 1:
-      state_vector[i] = TLB_NEWAREA;
-      break;
-    case 2:
-      state_vector[i] = SYSBK_OLDAREA;
-      break;
-    case 3:
-      state_vector[i] = SYSBK_NEWAREA;
-      break;
-    case 4:
-      state_vector[i] = PGMTRAP_OLDAREA;
-      break;
-    case 5:
-      state_vector[i] = PGMTRAP_NEWAREA;
-      break;
-    }
+    current->excvector[i] = state_vector[i];
+    /* switch(i){ */
+    /* case 0: */
+    /*   state_vector[i] = TLB_OLDAREA; */
+    /*   break; */
+    /* case 1: */
+    /*   state_vector[i] = TLB_NEWAREA; */
+    /*   break; */
+    /* case 2: */
+    /*   state_vector[i] = SYSBK_OLDAREA; */
+    /*   break; */
+    /* case 3: */
+    /*   state_vector[i] = SYSBK_NEWAREA; */
+    /*   break; */
+    /* case 4: */
+    /*   state_vector[i] = PGMTRAP_OLDAREA; */
+    /*   break; */
+    /* case 5: */
+    /*   state_vector[i] = PGMTRAP_NEWAREA; */
+    /*   break; */
+    /* } */
   }
 
-  current->TRUE;
+  current->bool_excvector = TRUE;
 }
 
 void get_cpu_time(cputime_t *global, cputime_t *user){
