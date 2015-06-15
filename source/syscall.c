@@ -7,7 +7,7 @@
 /* Soluzione adottata nella versione 0.01 di linux
 static pid_t lastpid = -1;  -1 no process executing */
 unsigned int pid_bitmap = 0;
-unsigned int free_pidmap = MAXPROC;
+unsigned int free_pidmap = 0xFFFFF;
 pid_t last_pid = 0, last_freed_pid = 0;
 pcb_t *pidmap[MAXPROC];
 
@@ -41,7 +41,7 @@ int create_process(state_t *statep, priority_enum *prio)
   unsigned int temp_bitmap, i = 1;
 
   /* Controllo risorse/priorità */
-  if( ((newp = allocPcb()) == NULL) && (*prio == PRIO_IDLE) )
+  if( ((newp = allocPcb()) == NULL) || (*prio == PRIO_IDLE) )
     /* No pcb available */
     return -1;
 

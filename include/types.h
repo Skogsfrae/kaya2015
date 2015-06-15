@@ -19,7 +19,8 @@ typedef struct pcb_t {
   state_t p_s;
   /* Added fields */
   pid_t pid;
-  
+
+  /* Time */
   cputime_t start_time;
   cputime_t elapsed_time;  /* Time task ticked last */
   cputime_t kernel_time;
