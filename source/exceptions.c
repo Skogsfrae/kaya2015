@@ -5,10 +5,35 @@
 #include <const.h>
 #include <time.h>
 
+static copy_state(state_t *dest, state_t *src){
+  dest->a1 = src->a1;
+  dest->a2 = src->a2;
+  dest->a3 = src->a3;
+  dest->a4 = src->a4;
+  dest->v1 = src->v1;
+  dest->v2 = src->v2;
+  dest->v3 = src->v3;
+  dest->v4 = src->v4;
+  dest->v5 = src->v5;
+  dest->v6 = src->v6;
+  dest->sl = src->sl;
+  dest->fp = src->fp;
+  dest->ip = src->ip;
+  dest->lr = src->lr;
+  dest->pc = src->pc;
+  dest->cpsr = src->cpsr;
+  dest->CP15_Control = src->CP15_Control;
+  dest->CP15_EntryHi = src->CP15_EntryHi;
+  dest->CP15_Cause = src->CP15_Cause;
+  dest->TOD_Hi = src->TOD_Hi;
+  dest->TOD_Low = src->TOD_Low;
+}
+
 void syscall_handler(void){
-  struct time_t beginning, ending;
   unsigned int sys_num, arg1, arg2, arg3, ret_value;
   cputime_t kernel_time1, kernel_time2;
+  struct state_t *state = (state_t *)SYSBK_OLDAREA;
+  
 
   /* Used to compute kernel time */
   kernel_time1 = getTODLO();
@@ -17,7 +42,7 @@ void syscall_handler(void){
   if(!current->bool_excvector && (sys_num != SPECTRAPVEC))
     terminate_precess(current->pid);
 
-  STST(current->excvector[EXCP_SYS_OLD]);
+  copy_state(&current->excvector[EXCP_SYS_OLD], state);
 
   /* Breakpoint or syscall?? */
   switch(getCAUSE()){
@@ -25,7 +50,8 @@ void syscall_handler(void){
     break;
   case EXC_SYSCALL:
     if(!(current->cpsr & STATUS_SYS_MODE)){
-      STST(current->excvector[EXCP_PGMT_OLD]);
+      copy_state(&current->excvector[EXCP_PGMT_OLD],
+		 &current->excvector[EXCP_SYS_OLD]);
       CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD].CP15_Cause,
 			EXC_RESERVEDINSTR);
       pgmtrap_handler();
@@ -80,6 +106,19 @@ void syscall_handler(void){
   LDST(&current->p_s);
 }
 
+void pgmtrap_handler(void){
+  cputime_t kernel_time1, kernel_time2;
+  struct state_t *state = (state_t *)PGMTRAP_OLDAREA;
 
-
-
+  kernel_time1 = getTODLO();
+  /* Olocausto again */
+  if(!current->bool_excvector)
+    terminate_process(current->pid);
+  else{
+    copy_state(&current->excvector[EXCP_PGMT_OLD], state);
+    
+  }
+  kernel_time2 = getTODLO();
+  current->kernel_time += kernel_time2 - kernel_time1;
+  LDST(&current->p_s);
+}
