@@ -72,6 +72,7 @@ void main(void){
   first->pc = (memaddr)test;
   insertProcQ(&p_norm, first);
   pc_count++;
+  current = first;
 
   /* 6 */
   if( (idle = allocPcb()) == NULL)

@@ -106,7 +106,7 @@ int create_process(state_t *statep, priority_enum *prio)
     last_pid = last_freed_pid;
     free_pidmap ^= last_freed_pid;
     pid_bitmap ^= last_pid;
-    pidmap[newp->pid] = newp;
+    pidmap[newp->pid - 1] = newp;
     tmp_bitmap = pid_bitmap ^ (pid_bitmap >> 1); /* limito la ricerca*/
     while(i != tmp_bitmap){                      /* del nuovo freepid*/
       if(i & free_pidmap)
@@ -114,6 +114,7 @@ int create_process(state_t *statep, priority_enum *prio)
       else
 	i <<= 1;
     }
+    /* gestire il caso che non sia trovato */
     last_freed_pid = i;
   }
   /* } */
@@ -156,7 +157,7 @@ static pcb_t *terminate_children(pcb_t *parent){
   pid_bitmap ^= pidmask;
   free_pidmap ^= pidmask;
   last_freed_pid = pidmask;
-  pidmap[parent->pid] = NULL;
+  pidmap[parent->pid - 1] = NULL;
 
   /* Aggiusto il valore del semaforo su cui è in attesa facendo una V */
   if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
@@ -173,7 +174,7 @@ void terminate_process(pid_t pid){
   pcb_t *parent, *child;
   int pidmask = get_pid_mask(pid);
 
-  parent = pidmap[pid];
+  parent = pidmap[pid - 1];
   outChild(parent);
 
   /* Genocidio */
@@ -194,7 +195,7 @@ void terminate_process(pid_t pid){
   
   freePcb(parent);
   pc_count--;
-  pidmap[pid] = NULL;
+  pidmap[pid - 1] = NULL;
 }
 
 void verhogen(int *semaddr, int weight){
@@ -222,7 +223,7 @@ void passeren(int *semaddr, int weight){
 void specify_exception_state_vector(state_t **state_vector){
   int i;
 
-  if(current->excvector[0] != NULL)
+  if(current->bool_excvector == TRUE)
     terminate_process(current->pid);
 
   for(i=0; i<6; i++){
