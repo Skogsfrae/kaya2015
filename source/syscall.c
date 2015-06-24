@@ -75,17 +75,6 @@ int create_process(state_t *statep, priority_enum *prio)
   newp->kernel_time = 0;
   newp->user_time = 0;
   newp->global_time = 0;
-
-  /* it means there are no pids used (no running programs) */
-  /* if(!pid_bitmap){ */
-  /*   newp->pid = 1; */
-  /*   pid_bitmap &= 1; */
-  /*   last_pid = 1; */
-  /*   free_pidmap ^= last_pid; */
-  /*   pidmap[last_pid] = newp; */
-  /* } */
-
-  /* else{ */
 	
   /* Vale sia come caso base (primo programma da eseguire),
   ** sia come caso in cui incrementalmente vengono creati processi */
@@ -117,28 +106,25 @@ int create_process(state_t *statep, priority_enum *prio)
     /* gestire il caso che non sia trovato */
     last_freed_pid = i;
   }
-  /* } */
-	
-	
-  /* lastpid++;
-     newp->pid = lastpid; */
 
   /* Adding to proper queue */
   switch(*prio){
   case PRIO_LOW:
-    list_add(newp->p_list, p_low);
+    insertProcQ(&p_low, newp);
     break;
   case PRIO_NORM:
-    list_add(newp->p_list, p_norm);
+    insertProcQ(&p_norm, newp);
     break;
   case PRIO_HIGH:
-    list_add(newp->p_list, p_high);
+    insertProcQ(&p_high, newp);
     break;
   }
 
+  newp->prio = *prio;
+
   for(i=0; i<6; i++)
     newp->excvector[i] = NULL;
-  new->bool_excvector = FALSE;
+  newp->bool_excvector = FALSE;
 
   newp->sem_wait = 0;
   newp->state = READY;
@@ -205,6 +191,18 @@ void verhogen(int *semaddr, int weight){
     return;
   if(tmp->sem_wait >= *semaddr){
     tmp->state = READY;
+    /* Adding to proper queue */
+    switch(tmp->prio){
+    case PRIO_LOW:
+      insertProcQ(&p_low, tmp);
+      break;
+    case PRIO_NORM:
+      insertProcQ(&p_norm, tmp);
+      break;
+    case PRIO_HIGH:
+      insertProcQ(&p_high, tmp);
+      break;
+    }
     tmp->sem_wait = 0;
     outBlocked(tmp);
     sb_count--;
@@ -226,29 +224,8 @@ void specify_exception_state_vector(state_t **state_vector){
   if(current->bool_excvector == TRUE)
     terminate_process(current->pid);
 
-  for(i=0; i<6; i++){
+  for(i=0; i<6; i++)
     current->excvector[i] = state_vector[i];
-    /* switch(i){ */
-    /* case 0: */
-    /*   state_vector[i] = TLB_OLDAREA; */
-    /*   break; */
-    /* case 1: */
-    /*   state_vector[i] = TLB_NEWAREA; */
-    /*   break; */
-    /* case 2: */
-    /*   state_vector[i] = SYSBK_OLDAREA; */
-    /*   break; */
-    /* case 3: */
-    /*   state_vector[i] = SYSBK_NEWAREA; */
-    /*   break; */
-    /* case 4: */
-    /*   state_vector[i] = PGMTRAP_OLDAREA; */
-    /*   break; */
-    /* case 5: */
-    /*   state_vector[i] = PGMTRAP_NEWAREA; */
-    /*   break; */
-    /* } */
-  }
 
   current->bool_excvector = TRUE;
 }

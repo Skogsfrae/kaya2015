@@ -2,6 +2,7 @@
 #include <asl.h>
 #include <const.h>
 #include <listx.h>
+#include <initial.h>
 #include <uARMtypes.h>
 #include <scheduler.h>
 #include <exceptions.h>
@@ -11,8 +12,7 @@ extern void test();
 void main(void){
   /* 1 */
   state_t *new_areas[4];
-  int i, sem_values[MAX_DEVICES];
-  semd_t dev_sem[MAX_DEVICES];
+  int i;
   pcb_t *first, *idle;
 
   for(i=0; i<4; i++){

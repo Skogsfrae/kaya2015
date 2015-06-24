@@ -39,8 +39,10 @@ void syscall_handler(void){
   kernel_time1 = getTODLO();
 
   /* If not excvector and no SYS5, genocidio again */
-  if(!current->bool_excvector && (sys_num != SPECTRAPVEC))
+  if(!current->bool_excvector && (sys_num != SPECTRAPVEC)){
     terminate_precess(current->pid);
+    scheduler();
+  }
 
   copy_state(&current->excvector[EXCP_SYS_OLD], state);
 
@@ -54,6 +56,8 @@ void syscall_handler(void){
 		 &current->excvector[EXCP_SYS_OLD]);
       CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD].CP15_Cause,
 			EXC_RESERVEDINSTR);
+      kernel_time2 = getTODLO();
+      current->kernel_time += kernel_time2 - kernel_time1;
       pgmtrap_handler();
     }
     
@@ -101,9 +105,7 @@ void syscall_handler(void){
 
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  /* if(current->excvector[0] == NULL) */
-  /*   terminate_process(current->pid); */
-  LDST(&current->p_s);
+  LDST(&current->excvector[EXCP_SYS_NEW]);
 }
 
 void pgmtrap_handler(void){
@@ -112,13 +114,30 @@ void pgmtrap_handler(void){
 
   kernel_time1 = getTODLO();
   /* Olocausto again */
-  if(!current->bool_excvector)
+  if(!current->bool_excvector){
     terminate_process(current->pid);
-  else{
-    copy_state(&current->excvector[EXCP_PGMT_OLD], state);
-    
+    scheduler();
   }
+  
+  copy_state(&current->excvector[EXCP_PGMT_OLD], state);
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  LDST(&current->p_s);
+  LDST(&current->excvector[EXCP_PGMT_NEW]);
+}
+
+void tlb_handler(void){
+  cputime_t kernel_time1, kernel_time2;
+  struct state_t *state = (state_t *)TLB_OLDAREA;
+
+  kernel_time1 = getTODLO();
+  /* Olocausto again */
+  if(!current->bool_excvector){
+    terminate_process(current->pid);
+    scheduler();
+  }
+  
+  copy_state(&current->excvector[EXCP_TLB_OLD], state);
+  kernel_time2 = getTODLO();
+  current->kernel_time += kernel_time2 - kernel_time1;
+  LDST(&current->excvector[EXCP_TLB_NEW]);
 }

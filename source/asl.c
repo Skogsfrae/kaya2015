@@ -3,12 +3,6 @@
 #include "listx.h"
 #include <uARMconst.h>
 
-typedef struct semd_t{
-  int *s_semAdd;
-  struct list_head s_link;
-  struct list_head s_procq;
-}semd_t;
-
 static struct list_head aslh = LIST_HEAD_INIT(aslh); 
 static struct list_head semdFree = LIST_HEAD_INIT(semdFree);
 static struct semd_t semdTable[MAXPROC];

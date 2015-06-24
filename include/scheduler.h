@@ -1,9 +1,14 @@
+#ifndef SCHEDULER_H
+#define SCHEDULER_H
+
 #include <types.h>
 #include <pcb.h>
 
-struct list_head p_low, p_norm, p_high, p_idle;
-pcb_t *current;
-int pc_count;
-int sb_count;
+extern struct list_head p_low, p_norm, p_high, p_idle;
+extern pcb_t *current;
+extern int pc_count;
+extern int sb_count;
 
 extern void scheduler(void);
+
+#endif

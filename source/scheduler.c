@@ -5,8 +5,13 @@
 #include <uARMconst.h>
 #include <scheduler.h>
 
+struct cputime_t temp, tick, tod;
+struct list_head p_low, p_norm, p_high, p_idle;
+pcb_t *current;
+int pc_count;
+int sb_count;
+
 void scheduler(void){
-  struct cputime_t temp, tick, tod;
 
   while(1){
     /* 
@@ -21,20 +26,25 @@ void scheduler(void){
     temp = 0;
     tod = getTODLO();
     current->global_time += tod - current->elapsed_time;
-    /* timer_sub(&tod, &current->elapsed_time, &tick); */
-    /* timer_add(&current->global_time, &tick, &temp); */
-    /* timecpy(&current->global_time, &temp); */
-    /* timer_add(&current->user_time, &tick, &temp); */
-    /* timecpy(&current->user_time, &temp); */
-    /* timecpy(&current->elapsed_time, &tod); */
 
-    if(current->state != WAIT)
+    if(current->state != WAIT){
       current->state = READY;
+      switch(current->prio){
+      case PRIO_LOW:
+	insertProcQ(&p_low, current);
+	break;
+      case PRIO_NORM:
+	insertProcQ(&p_norm, current);
+	break;
+      case PRIO_HIGH:
+	insertProcQ(&p_high, current);
+	break;
+      }
+    }
 
     if( (current = headProcQ(&p_high))
 	!= NULL && (current->state != WAIT)){
       outProcQ(&p_high, current);
-      insertProcQ(&p_high, current);
       current->elapsed_time = tod;
       current->state = RUNNING;
     }
@@ -42,7 +52,6 @@ void scheduler(void){
       if( (current = headProcQ(&p_norm))
 	  != NULL && (current->state != WAIT)){
 	outProcQ(&p_norm, current);
-	insertProcQ(&p_norm, current);
 	current->elapsed_time = tod;
 	current->state = RUNNING;
       }
@@ -50,7 +59,6 @@ void scheduler(void){
 	if( (current = headProcQ(&p_low))
 	    != NULL && (current->state != WAIT)){
 	  outProcQ(&p_low, current);
-	  insertProcQ(&p_low, current);
 	  current->elapsed_time = tod;
 	  current->state = RUNNING;
 	}
