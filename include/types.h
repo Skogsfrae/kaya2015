@@ -5,11 +5,6 @@
 #include <uARMtypes.h>
 #include <const.h>
 
-/* typedef struct time_t{ */
-/*   cputime_t upper_time; */
-/*   cputime_t lower_time; */
-/* } time_t; */
-
 typedef struct pcb_t {
   struct list_head p_list;
   struct list_head p_children;
