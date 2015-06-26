@@ -105,6 +105,7 @@ void syscall_handler(void){
 
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
+  current->excvector[EXCP_SYS_NEW].pc++;
   LDST(&current->excvector[EXCP_SYS_NEW]);
 }
 

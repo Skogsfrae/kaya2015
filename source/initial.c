@@ -8,7 +8,7 @@
 
 int dev_sem[MAX_DEVICES];
 struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
-struct termreg_t *terminals[DEV_PER_INT*2];
+struct termreg_t *terminals[DEV_PER_INT];
 
 extern void test();
 

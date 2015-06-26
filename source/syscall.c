@@ -247,12 +247,23 @@ void wait_for_clock(void){
 
 unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
   int read = 0;
+  int status_word;
 
   /* Passa al terminale di lettura */
   if(waitForTermRead)
     read = DEV_PER_INT;
-  passeren(&dev_sem[(intlNo-1)*DEV_PER_INT + read + dnum]->semAdd, 1);
-  
+  passeren(&dev_sem[(intlNo-2)*DEV_PER_INT + read + dnum], 1);
+
+  if(intlNo == INT_TERMINAL){
+    if(waitForTermRead)
+      status_word = terminals[dnum]->recv_status;
+    else
+      status_word = terminals[dnum]->transm_status;
+  }
+  else
+    status_word = devices[(intlNo-2)*DEV_PER_INT + dnum]->status;
+
+  return status_word;
 }
 
 pid_t get_pid(void){
