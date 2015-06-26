@@ -2,10 +2,12 @@
 #include <asl.h>
 #include <const.h>
 #include <listx.h>
-#include <initial.h>
 #include <uARMtypes.h>
 #include <scheduler.h>
 #include <exceptions.h>
+
+int sem_values[MAX_DEVICES];
+semd_t dev_sem[MAX_DEVICES];
 
 extern void test();
 

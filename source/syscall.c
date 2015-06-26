@@ -239,8 +239,13 @@ void wait_for_clock(void){
   passeren(dev_sem[CLOCK_SEM]->semAdd, 1);
 }
 
-unsigned int wait_for_io(int intlNo, int dnum, int waitFotTermRead){
-  passeren(dev_sem[dnum]->semAdd, 1);
+unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
+  int read = 0;
+
+  /* Passa al terminale di lettura */
+  if(waitForTermRead)
+    read = DEV_PER_INT;
+  passeren(dev_sem[intlNo + read + dnum]->semAdd, 1);
   
 }
 
