@@ -2,6 +2,7 @@
 #include <asl.h>
 #include <listx.h>
 #include <const.h>
+#include <bitmap.h>
 #include <scheduler.h>
 
 /* Soluzione adottata nella versione 0.01 di linux
@@ -10,29 +11,6 @@ unsigned int pid_bitmap = 0;
 unsigned int free_pidmap = 0xFFFFF;
 pid_t last_pid = 0, last_freed_pid = 0;
 pcb_t *pidmap[MAXPROC];
-
-/* Gets pid number from pid mask */
-static int get_pid_num(int pidmask){
-  int pid;
-
-  if(pidmask == 0)
-    return 0;
-
-  while(pidmask > 0){
-    if(pidmask&1 == 0)
-      pid++;
-    pidmask >>=1;
-  }
-
-  return pid++;
-}
-
-/* Gets pid mask from pid number */
-static int get_pid_mask(int pid){
-  int mask = 1;
-
-  return mask <<= pid;
-}
 
 /* Bisogna aggiungere la priorita' */
 int create_process(state_t *statep, priority_enum *prio)
@@ -85,13 +63,13 @@ int create_process(state_t *statep, priority_enum *prio)
     tmp_bitmap = pid_bitmap ^ tmp_bitmap; /* extracting new pid */
     free_pidmap ^= tmp_bitmap;
     last_pid = tmp_bitmap;
-    newp->pid = get_pid_num(tmp_bitmap);
+    newp->pid = get_bit_num(tmp_bitmap);
     pidmap[newp->pid - 1] = newp;
   }
 
   /* Riciclo pid */
   else{
-    newp->pid = get_pid_num(last_freed_pid);
+    newp->pid = get_bit_num(last_freed_pid);
     last_pid = last_freed_pid;
     free_pidmap ^= last_freed_pid;
     pid_bitmap ^= last_pid;
@@ -134,7 +112,7 @@ int create_process(state_t *statep, priority_enum *prio)
 }
 
 static pcb_t *terminate_children(pcb_t *parent){
-  int pidmask = get_pid_mask(parent->pid);
+  int pidmask = get_bit_mask(parent->pid);
   while(emptyChild(parent))
     freePcb(terminate_children(parent->p_children));
   
@@ -158,7 +136,7 @@ static pcb_t *terminate_children(pcb_t *parent){
 /* Bisogna valutare il caso che il processo sia in una coda di un semaforo */
 void terminate_process(pid_t pid){
   pcb_t *parent, *child;
-  int pidmask = get_pid_mask(pid);
+  int pidmask = get_bit_mask(pid);
 
   parent = pidmap[pid - 1];
   outChild(parent);
