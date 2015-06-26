@@ -5,12 +5,6 @@
 #include <uARMtypes.h>
 #include <const.h>
 
-typedef struct semd_t{
-  int *s_semAdd;
-  struct list_head s_link;
-  struct list_head s_procq;
-}semd_t;
-
 typedef struct pcb_t {
   struct list_head p_list;
   struct list_head p_children;

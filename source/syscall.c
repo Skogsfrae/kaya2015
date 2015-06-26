@@ -210,12 +210,18 @@ void verhogen(int *semaddr, int weight){
 }
 
 void passeren(int *semaddr, int weight){
-  *semaddr -= weight;
-  insertBlocked(semaddr, current);
-  current->state = WAIT;
-  current->sem_wait = weight;
-  sb_count++;
-  scheduler();
+  if((*semaddr -= weight) < 0){
+    if((insertBlocked(semaddr, current) == TRUE){
+#ifdef DEBUG
+      tprint("Non ci sono semafori liberi\n");
+#endif //DEBUG
+      PANIC();
+    }
+    current->state = WAIT;
+    current->sem_wait = weight;
+    sb_count++;
+    scheduler();
+  }
 }
 
 void specify_exception_state_vector(state_t **state_vector){
@@ -236,7 +242,7 @@ void get_cpu_time(cputime_t *global, cputime_t *user){
 }
 
 void wait_for_clock(void){
-  passeren(dev_sem[CLOCK_SEM]->semAdd, 1);
+  passeren(&dev_sem[CLOCK_SEM], 1);
 }
 
 unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
@@ -245,7 +251,7 @@ unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
   /* Passa al terminale di lettura */
   if(waitForTermRead)
     read = DEV_PER_INT;
-  passeren(dev_sem[intlNo + read + dnum]->semAdd, 1);
+  passeren(&dev_sem[(intlNo-1)*DEV_PER_INT + read + dnum]->semAdd, 1);
   
 }
 

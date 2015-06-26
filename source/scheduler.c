@@ -5,11 +5,12 @@
 #include <uARMconst.h>
 #include <scheduler.h>
 
-struct cputime_t temp, tick, tod;
+struct cputime_t tick, tod;
 struct list_head p_low, p_norm, p_high, p_idle;
 pcb_t *current;
 int pc_count;
 int sb_count;
+int clock_ticks = 0;
 
 void scheduler(void){
 
@@ -21,9 +22,12 @@ void scheduler(void){
      * 4 aggiornare il cputimer
      * 5 lanciare il prossimo processo (ldst)
      */
-
-    tod = 0;
-    temp = 0;
+    if((clock_ticks++) == 20){
+      if((headBlocked(&dev_sem[CLOCK_SEM])) != NULL)
+	verhogen(&dev_sem[CLOCK_SEM], 1);
+      clock_ticks = 0;
+    }
+    
     tod = getTODLO();
     current->global_time += tod - current->elapsed_time;
 

@@ -6,15 +6,16 @@
 #include <scheduler.h>
 #include <exceptions.h>
 
-int sem_values[MAX_DEVICES];
-semd_t dev_sem[MAX_DEVICES];
+int dev_sem[MAX_DEVICES];
+struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
+struct termreg_t *terminals[DEV_PER_INT*2];
 
 extern void test();
 
 void main(void){
   /* 1 */
   state_t *new_areas[4];
-  int i;
+  int i, addr = 0x40;
   pcb_t *first, *idle;
 
   for(i=0; i<4; i++){
@@ -59,10 +60,17 @@ void main(void){
   current = NULL;
 
   /* 4 */
-  for(i=0; i<MAX_DEVICES; i++){
-    sem_values[i] = 0;
-    dev_sem[i]->s_semAdd = sem_values[i];
+  for(i=0; i<MAX_DEVICES; i++)
+    dev_sem[i] = 0;
+  for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
+    devices[i] = (memaddr)&addr;
+    addr += 0x10;
   }
+  for(i=0; i<DEV_PER_INT; i++){
+    terminals[i] = (memaddr)&addr;
+    addr += 0x10;
+  }
+    
 
   /* 5 */
   if( (first = allocPcb()) == NULL)
