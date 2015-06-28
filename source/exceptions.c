@@ -37,9 +37,9 @@ void syscall_handler(void){
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)SYSBK_OLDAREA;
 
-  #ifdef DEBUG
+#ifdef DEBUG
   tprint("Syshandler: ciao\n");
-  #endif
+#endif
 
   /* Used to compute kernel time */
   kernel_time1 = getTODLO();
@@ -58,6 +58,9 @@ void syscall_handler(void){
     break;
   case EXC_SYSCALL:
     if(!(current->p_s.cpsr & STATUS_SYS_MODE)){
+#ifdef DEBUG
+      tprint("Syshandler: passing to pgmtrap\n");
+#endif
       copy_state(current->excvector[EXCP_PGMT_OLD],
 		 current->excvector[EXCP_SYS_OLD]);
       CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD]->CP15_Cause,
@@ -75,7 +78,7 @@ void syscall_handler(void){
 
     if(sys_num > SYSCALL_MAX){
 #ifdef DEBUG
-      tprint("Non existing syscall\n");
+      tprint("Syshandler: non existing syscall\n");
 #endif
       PANIC();
     }
@@ -83,27 +86,51 @@ void syscall_handler(void){
     /* Syscall dispatch */
     switch(sys_num){
     case CREATEPROCESS:
+#ifdef DEBUG
+      tprint("Syshandler: createprocess\n");
+#endif
       current->p_s.a1 = create_process((state_t*)arg1, (priority_enum)arg2);
       break;
     case TERMINATEPROCESS:
+#ifdef DEBUG
+      tprint("Syshandler: terminateprocess\n");
+#endif
       terminate_process(arg1);
       break;
     case VERHOGEN:
+#ifdef DEBUG
+      tprint("Syshandler: verhogen\n");
+#endif
       verhogen((int*)arg1, arg2);
       break;
     case PASSEREN:
+#ifdef DEBUG
+      tprint("Syshandler: passeren\n");
+#endif
       passeren((int*)arg1, arg2);
       break;
     case SPECTRAPVEC:
+#ifdef DEBUG
+      tprint("Syshandler: systrapvect\n");
+#endif
       specify_exception_state_vector((state_t**)arg1);
       break;
     case GETCPUTIME:
+#ifdef DEBUG
+      tprint("Syshandler: cputime\n");
+#endif
       get_cpu_time((cputime_t*)arg1, (cputime_t*)arg2);
       break;
     case GETPID:
+#ifdef DEBUG
+      tprint("Syshandler: getpid\n");
+#endif
       current->p_s.a1 = get_pid();
       break;
     case GETPPID:
+#ifdef DEBUG
+      tprint("Syshandler: getppid\n");
+#endif
       current->p_s.a1 = get_ppid();
       break;
     }
@@ -119,6 +146,9 @@ void pgmtrap_handler(void){
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)PGMTRAP_OLDAREA;
 
+#ifdef DEBUG
+  tprint("Pgmtrap: ciao\n");
+#endif
   kernel_time1 = getTODLO();
   /* Olocausto again */
   if(!current->bool_excvector){
@@ -136,6 +166,9 @@ void tlb_handler(void){
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)TLB_OLDAREA;
 
+#ifdef DEBUG
+  tprint("Tlbhandler: ciao\n");
+#endif
   kernel_time1 = getTODLO();
   /* Olocausto again */
   if(!current->bool_excvector){

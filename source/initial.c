@@ -1,7 +1,9 @@
 #include <pcb.h>
 #include <asl.h>
+#include <arch.h>
 #include <const.h>
 #include <listx.h>
+#include <syscall.h>
 #include <uARMconst.h>
 #include <uARMtypes.h>
 #include <scheduler.h>
@@ -19,6 +21,7 @@ void main(void){
   state_t *new_areas[4];
   int i, addr = 0x40;
   pcb_t *first, *idle;
+  state_t fproc;
 
 #ifdef DEBUG
   tprint("Populating areas\n");
@@ -88,17 +91,26 @@ void main(void){
 #ifdef DEBUG
   tprint("Creating first process\n");
 #endif
-  if( (first = allocPcb()) == NULL)
-    PANIC();
-  first->p_s.cpsr = STATUS_NULL;
-  first->p_s.cpsr = STATUS_SYS_MODE | STATUS_ENABLE_INT(first->p_s.cpsr)
-    | STATUS_ENABLE_TIMER(first->p_s.cpsr);
-  first->p_s.sp = RAM_TOP - FRAMESIZE;
-  first->p_s.pc = (memaddr)&test;
-  first->prio = PRIO_NORM;
-  insertProcQ(&p_norm, first);
-  pc_count++;
-  current = first;
+
+  fproc.cpsr = STATUS_NULL;
+  fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE | STATUS_ENABLE_INT(fproc.cpsr)
+    | STATUS_ENABLE_TIMER(fproc.cpsr);
+  fproc.sp = RAM_TOP - FRAMESIZE;
+  fproc.pc = (memaddr)test;
+  create_process(&fproc, PRIO_NORM);
+  
+  /* if( (first = allocPcb()) == NULL) */
+  /*   PANIC(); */
+  /* first->p_s.cpsr = STATUS_NULL; */
+  /* first->p_s.cpsr = first->p_s.cpsr | STATUS_SYS_MODE */
+  /*   | STATUS_ENABLE_INT(first->p_s.cpsr) */
+  /*   | STATUS_ENABLE_TIMER(first->p_s.cpsr); */
+  /* first->p_s.sp = RAM_TOP - FRAMESIZE; */
+  /* first->p_s.pc = (memaddr)&test; */
+  /* first->prio = PRIO_NORM; */
+  /* insertProcQ(&p_norm, first); */
+  /* pc_count++; */
+  /* current = first; */
 
   /* 6 */
 #ifdef DEBUG

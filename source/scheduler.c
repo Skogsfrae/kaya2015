@@ -19,7 +19,7 @@ int clock_ticks = 0;
 
 void scheduler(void){
 
-  while(1){
+  // while(1){
     /* 
      * 1 aggiornare il timer di current
      * 2 modificare current->state
@@ -32,30 +32,32 @@ void scheduler(void){
 	verhogen(&dev_sem[CLOCK_SEM], 1);
       clock_ticks = 0;
     }
-    
-    tod = getTODLO();
-    current->global_time += tod - current->elapsed_time;
+
+    if(current != NULL){    
+      tod = getTODLO();
+      current->global_time += tod - current->elapsed_time;
 #ifdef DEBUG
-    tprint("Scheduler: metto il processo in coda\n");
+      tprint("Scheduler: metto il processo in coda\n");
 #endif
-    if(current->state != WAITING){
-      current->state = READY;
-      #ifdef DEBUG
-      tprint("Scheduler: burp!\n");
-      #endif
-      switch(current->prio){
-      case PRIO_LOW:
-	insertProcQ(&p_low, current);
-	break;
-      case PRIO_NORM:
-	#ifdef DEBUG
-	tprint("Scheduler: scassacci la minchia\n");
-	#endif
-	insertProcQ(&p_norm, current);
-	break;
-      case PRIO_HIGH:
-	insertProcQ(&p_high, current);
-	break;
+      if(current->state != WAITING){
+	current->state = READY;
+#ifdef DEBUG
+	tprint("Scheduler: ahahah!\n");
+#endif
+	switch(current->prio){
+	case PRIO_LOW:
+	  insertProcQ(&p_low, current);
+	  break;
+	case PRIO_NORM:
+#ifdef DEBUG
+	  tprint("Scheduler: prio_norm\n");
+#endif
+	  insertProcQ(&p_norm, current);
+	  break;
+	case PRIO_HIGH:
+	  insertProcQ(&p_high, current);
+	  break;
+	}
       }
     }
 
@@ -111,7 +113,11 @@ void scheduler(void){
       }
     }
 
+    #ifdef DEBUG
+    tprint("Scheduler: setting timer\n");
+    #endif
+
     setTIMER(SCHED_TIME_SLICE);
-    LDST(&current->p_s);
-  }
+    LDST(&(current->p_s));
+    //}
 }
