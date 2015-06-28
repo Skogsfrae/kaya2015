@@ -1,9 +1,12 @@
 #include <const.h>
 #include <bitmap.h>
+#include <initial.h>
 #include <syscall.h>
+#include <scheduler.h>
 #include <uARMconst.h>
+#include <uARMtypes.h>
 
-static struct state_t *state = (state_t *)INT_OLDAREA;
+state_t *state = (state_t *)INT_OLDAREA;
 int status_word[DEV_USED_INTS+1][DEV_PER_INT];
 
 void interrupt_handler(void){
@@ -13,12 +16,22 @@ void interrupt_handler(void){
 
   kernel_time1 = getTODLO();
 
-  cause = current->p_s.cause;
+  cause = state->CP15_Cause;
+#ifdef DEBUG
+  tprint("Interrupt\n");
+#endif
   
   if(CAUSE_IP_GET(cause, INT_TIMER)){
+#ifdef DEBUG
+    tprint("Interrupt: gestione timer\n");
+#endif
+    setSTATUS(STATUS_DISABLE_TIMER(getSTATUS()));
   }
   else{
       if(CAUSE_IP_GET(cause, INT_DISK)){
+#ifdef DEBUG
+    tprint("Interrupt: gestione disk\n");
+#endif
 	dev_bitmap = (memaddr)0x6FE0;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	/* -3 perché negli array dei device/semafori si parte da **
@@ -29,6 +42,9 @@ void interrupt_handler(void){
       }
     else{
       if(CAUSE_IP_GET(cause, INT_TAPE)){
+#ifdef DEBUG
+	tprint("Interrupt: gestione tape\n");
+#endif
 	dev_bitmap = (memaddr)0x6FE4;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	status_word[INT_TAPE-3][dnum] = devices[(INT_TAPE-3)+dnum]->status;
@@ -37,6 +53,9 @@ void interrupt_handler(void){
       }
       else{
 	if(CAUSE_IP_GET(cause, INT_UNUSED)){
+#ifdef DEBUG
+	  tprint("Interrupt: gestione unused\n");
+#endif
 	  dev_bitmap = (memaddr)0x6FE8;
 	  dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	  status_word[INT_UNUSED-3][dnum] =
@@ -46,6 +65,9 @@ void interrupt_handler(void){
 	}
 	else{
 	  if(CAUSE_IP_GET(cause, INT_PRINTER)){
+#ifdef DEBUG
+	    tprint("Interrupt: gestione printer\n");
+#endif
 	    dev_bitmap = (memaddr)0x6FEC;
 	    dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	    status_word[INT_PRINTER-3][dnum] =
@@ -55,6 +77,9 @@ void interrupt_handler(void){
 	  }
 	  else{
 	    if(CAUSE_IP_GET(cause, INT_TERMINAL)){
+#ifdef DEBUG
+	      tprint("Interrupt: gestione terminal \n");
+#endif
 	      dev_bitmap = (memaddr)0x6FF0;
 	      dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	      /* read */

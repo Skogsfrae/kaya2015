@@ -5,6 +5,12 @@
 #include <uARMtypes.h>
 #include <const.h>
 
+typedef struct semd_t{
+  int *s_semAdd;
+  struct list_head s_link;
+  struct list_head s_procq;
+} semd_t;
+
 typedef struct pcb_t {
   struct list_head p_list;
   struct list_head p_children;
@@ -21,10 +27,10 @@ typedef struct pcb_t {
   cputime_t kernel_time;
   cputime_t global_time;
 
-  state_t excvector[6];
+  state_t *excvector[6];
   int bool_excvector;
 
-  priotity_enum prio;
+  priority_enum prio;
   int state;
   int sem_wait;
 } pcb_t;

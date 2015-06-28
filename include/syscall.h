@@ -1,7 +1,10 @@
 #ifndef SYSCALL_H
 #define SYSCALL_H
 
-extern int create_process(state_t *statep, priority_enum *prio);
+#include <types.h>
+#include <const.h>
+
+extern int create_process(state_t *statep, priority_enum prio);
 extern void terminate_process(pid_t pid);
 extern void verhogen(int *semaddr, int weight);
 extern void passeren(int *semaddr, int weight);

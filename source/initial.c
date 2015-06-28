@@ -2,9 +2,11 @@
 #include <asl.h>
 #include <const.h>
 #include <listx.h>
+#include <uARMconst.h>
 #include <uARMtypes.h>
 #include <scheduler.h>
 #include <exceptions.h>
+#include <interrupts.h>
 
 int dev_sem[MAX_DEVICES];
 struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
@@ -17,6 +19,10 @@ void main(void){
   state_t *new_areas[4];
   int i, addr = 0x40;
   pcb_t *first, *idle;
+
+#ifdef DEBUG
+  tprint("Populating areas\n");
+#endif
 
   for(i=0; i<4; i++){
     switch(i){
@@ -46,50 +52,66 @@ void main(void){
   }
 
   /* 2 */
+#ifdef DEBUG
+  tprint("Initializing pcbs and asl\n");
+#endif
   initPcbs();
   initASL();
   
   /* 3 */
-  p_low = LIST_HEAD_INIT(p_low);
-  p_norm = LIST_HEAD_INIT(p_norm);
-  p_high = LIST_HEAD_INIT(p_high);
-  p_idle = LIST_HEAD_INIT(p_idle);
+  /* p_low=LIST_HEAD_INIT(p_low); */
+  /* p_norm=LIST_HEAD_INIT(p_norm); */
+  /* p_high=LIST_HEAD_INIT(p_high); */
+  /* p_idle=LIST_HEAD_INIT(p_idle); */
 
   pc_count = 0;
   sb_count = 0;
   current = NULL;
 
   /* 4 */
+#ifdef DEBUG
+  tprint("Initializing dev semaphores\n");
+#endif
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
   for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
-    devices[i] = (memaddr)&addr;
+    devices[i] = (memaddr)addr;
     addr += 0x10;
   }
   for(i=0; i<DEV_PER_INT; i++){
-    terminals[i] = (memaddr)&addr;
+    terminals[i] = (memaddr)addr;
     addr += 0x10;
   }
     
 
   /* 5 */
+#ifdef DEBUG
+  tprint("Creating first process\n");
+#endif
   if( (first = allocPcb()) == NULL)
     PANIC();
-  first->cpsr = STATUS_NULL;
-  first->cpsr = STATUS_SYS_MODE | STATUS_INT_ENABLE(first->cpsr)
-    | STATUS_ENABLE_TIMER(first->cpsr);
-  first->sp = RAM_TOP - FRAMESIZE;
-  first->pc = (memaddr)test;
+  first->p_s.cpsr = STATUS_NULL;
+  first->p_s.cpsr = STATUS_SYS_MODE | STATUS_ENABLE_INT(first->p_s.cpsr)
+    | STATUS_ENABLE_TIMER(first->p_s.cpsr);
+  first->p_s.sp = RAM_TOP - FRAMESIZE;
+  first->p_s.pc = (memaddr)&test;
+  first->prio = PRIO_NORM;
   insertProcQ(&p_norm, first);
   pc_count++;
   current = first;
 
   /* 6 */
+#ifdef DEBUG
+  tprint("Allocating idle process\n");
+#endif
   if( (idle = allocPcb()) == NULL)
     PANIC();
-  idle->cpsr = STATUS_NULL;
+  idle->p_s.cpsr = STATUS_NULL;
   /* a cosa puntano sp e pc? */
 
   /* 7 */
+#ifdef DEBUG
+  tprint("Calling scheduler\n");
+#endif
   scheduler();
 }

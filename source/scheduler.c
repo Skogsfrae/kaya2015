@@ -1,12 +1,17 @@
 #include <pcb.h>
 #include <const.h>
 #include <types.h>
+#include <syscall.h>
 #include <libuarm.h>
+#include <initial.h>
+#include <uARMtypes.h>
 #include <uARMconst.h>
-#include <scheduler.h>
 
-struct cputime_t tick, tod;
-struct list_head p_low, p_norm, p_high, p_idle;
+struct list_head p_low=LIST_HEAD_INIT(p_low);
+struct list_head p_norm=LIST_HEAD_INIT(p_norm);
+struct list_head p_high=LIST_HEAD_INIT(p_high);
+struct list_head p_idle=LIST_HEAD_INIT(p_idle);
+cputime_t tick, tod;
 pcb_t *current;
 int pc_count;
 int sb_count;
@@ -30,14 +35,22 @@ void scheduler(void){
     
     tod = getTODLO();
     current->global_time += tod - current->elapsed_time;
-
-    if(current->state != WAIT){
+#ifdef DEBUG
+    tprint("Scheduler: metto il processo in coda\n");
+#endif
+    if(current->state != WAITING){
       current->state = READY;
+      #ifdef DEBUG
+      tprint("Scheduler: burp!\n");
+      #endif
       switch(current->prio){
       case PRIO_LOW:
 	insertProcQ(&p_low, current);
 	break;
       case PRIO_NORM:
+	#ifdef DEBUG
+	tprint("Scheduler: scassacci la minchia\n");
+	#endif
 	insertProcQ(&p_norm, current);
 	break;
       case PRIO_HIGH:
@@ -46,22 +59,28 @@ void scheduler(void){
       }
     }
 
+#ifdef DEBUG
+    tprint("Scheduler: seleziono il processo dalla coda\n");
+#endif
     if( (current = headProcQ(&p_high))
-	!= NULL && (current->state != WAIT)){
+	!= NULL && (current->state != WAITING)){
       outProcQ(&p_high, current);
       current->elapsed_time = tod;
       current->state = RUNNING;
     }
     else{
       if( (current = headProcQ(&p_norm))
-	  != NULL && (current->state != WAIT)){
+	  != NULL && (current->state != WAITING)){
+	#ifdef DEBUG
+	tprint("Scheduler: corretto\n");
+	#endif
 	outProcQ(&p_norm, current);
 	current->elapsed_time = tod;
 	current->state = RUNNING;
       }
       else{
 	if( (current = headProcQ(&p_low))
-	    != NULL && (current->state != WAIT)){
+	    != NULL && (current->state != WAITING)){
 	  outProcQ(&p_low, current);
 	  current->elapsed_time = tod;
 	  current->state = RUNNING;
@@ -72,10 +91,17 @@ void scheduler(void){
 	    HALT();
 	  else{
 	    /* deadlock */
-	    if(pc_count > 0 && sb_count == 0)
+	    if(pc_count > 0 && sb_count == 0){
+#ifdef DEBUG
+	      tprint("Scheduler: deadlock\n");
+#endif
 	      PANIC();
 	    /* idle */
+	    }
 	    else{
+#ifdef DEBUG
+	      tprint("Scheduler: calling idle process\n");
+#endif
 	      current = headProcQ(&p_idle);
 	      current->elapsed_time = tod;
 	      current->state = RUNNING;
@@ -86,6 +112,6 @@ void scheduler(void){
     }
 
     setTIMER(SCHED_TIME_SLICE);
-    LDST(&current->p_s)
+    LDST(&current->p_s);
   }
 }

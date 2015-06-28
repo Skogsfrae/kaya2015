@@ -171,7 +171,9 @@ void print(char *msg) {
 void test() {	
 	cpu_t		time1, time2;
 	pid_t	fpid;
-
+#ifdef DEBUG
+	tprint("ciao\n");
+	#endif
 	SYSCALL(VERHOGEN, (int)&testsem, 1, 0);					/* V(testsem)   */
 
 	if (testsem != 1) { print("error: p1 v(testsem) with no effects\n"); PANIC(); }

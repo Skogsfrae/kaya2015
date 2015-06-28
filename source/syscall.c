@@ -3,7 +3,11 @@
 #include <listx.h>
 #include <const.h>
 #include <bitmap.h>
+#include <syscall.h>
+#include <initial.h>
 #include <scheduler.h>
+#include <interrupts.h>
+#include <uARMtypes.h>
 
 /* Soluzione adottata nella versione 0.01 di linux
 static pid_t lastpid = -1;  -1 no process executing */
@@ -13,13 +17,13 @@ pid_t last_pid = 0, last_freed_pid = 0;
 pcb_t *pidmap[MAXPROC];
 
 /* Bisogna aggiungere la priorita' */
-int create_process(state_t *statep, priority_enum *prio)
+int create_process(state_t *statep, priority_enum prio)
 {
   pcb_t *newp;
-  unsigned int temp_bitmap, i = 1;
+  unsigned int tmp_bitmap, i = 1;
 
   /* Controllo risorse/priorità */
-  if( ((newp = allocPcb()) == NULL) || (*prio == PRIO_IDLE) )
+  if( ((newp = allocPcb()) == NULL) || (prio == PRIO_IDLE) )
     /* No pcb available */
     return -1;
 
@@ -39,7 +43,7 @@ int create_process(state_t *statep, priority_enum *prio)
   newp->p_s.ip = statep->ip;
   newp->p_s.sp = statep->sp;
   newp->p_s.lr = statep->lr;
-  newp->p_s.pc = statep->ps;
+  newp->p_s.pc = statep->pc;
   newp->p_s.cpsr = statep->cpsr;
   newp->p_s.CP15_Control = statep->CP15_Control;
   newp->p_s.CP15_EntryHi = statep->CP15_EntryHi;
@@ -51,7 +55,6 @@ int create_process(state_t *statep, priority_enum *prio)
   newp->start_time = getTODLO();
   newp->elapsed_time = 0;
   newp->kernel_time = 0;
-  newp->user_time = 0;
   newp->global_time = 0;
 	
   /* Vale sia come caso base (primo programma da eseguire),
@@ -86,7 +89,7 @@ int create_process(state_t *statep, priority_enum *prio)
   }
 
   /* Adding to proper queue */
-  switch(*prio){
+  switch(prio){
   case PRIO_LOW:
     insertProcQ(&p_low, newp);
     break;
@@ -98,7 +101,7 @@ int create_process(state_t *statep, priority_enum *prio)
     break;
   }
 
-  newp->prio = *prio;
+  newp->prio = prio;
 
   for(i=0; i<6; i++)
     newp->excvector[i] = NULL;
@@ -111,10 +114,10 @@ int create_process(state_t *statep, priority_enum *prio)
   return newp->pid;
 }
 
-static pcb_t *terminate_children(pcb_t *parent){
+static pcb_t *terminate_children(struct pcb_t *parent){
   int pidmask = get_bit_mask(parent->pid);
   while(emptyChild(parent))
-    freePcb(terminate_children(parent->p_children));
+    freePcb(terminate_children(headProcQ(&parent->p_children)));
   
   if(pidmask == last_pid)
     last_pid = 0;
@@ -124,8 +127,8 @@ static pcb_t *terminate_children(pcb_t *parent){
   pidmap[parent->pid - 1] = NULL;
 
   /* Aggiusto il valore del semaforo su cui è in attesa facendo una V */
-  if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
-    verhogen(parent->p_cursem->semaddr, parent->sem_wait)
+  if(parent->sem_wait > 0 && *(parent->p_cursem->s_semAdd) < 0){
+    verhogen(parent->p_cursem->s_semAdd, parent->sem_wait);
     sb_count--;
   }
 
@@ -135,7 +138,7 @@ static pcb_t *terminate_children(pcb_t *parent){
 
 /* Bisogna valutare il caso che il processo sia in una coda di un semaforo */
 void terminate_process(pid_t pid){
-  pcb_t *parent, *child;
+  struct pcb_t *parent, *child;
   int pidmask = get_bit_mask(pid);
 
   parent = pidmap[pid - 1];
@@ -152,8 +155,8 @@ void terminate_process(pid_t pid){
   last_freed_pid = pidmask;
 
   /* Aggiusto il valore del semaforo */
-  if(parent->sem_wait > 0 && *(parent->p_cursem->semaddr) < 0){
-    verhogen(parent->p_cursem->semaddr, parent->sem_wait);
+  if(parent->sem_wait > 0 && *(parent->p_cursem->s_semAdd) < 0){
+    verhogen(parent->p_cursem->s_semAdd, parent->sem_wait);
     sb_count--;
   }
   
@@ -165,37 +168,37 @@ void terminate_process(pid_t pid){
 void verhogen(int *semaddr, int weight){
   pcb_t *tmp;
   *semaddr += weight;
-  if((tmp = headBlocked(semaddr)) == NULL)
-    return;
-  if(tmp->sem_wait >= *semaddr){
-    tmp->state = READY;
-    /* Adding to proper queue */
-    switch(tmp->prio){
-    case PRIO_LOW:
-      insertProcQ(&p_low, tmp);
-      break;
-    case PRIO_NORM:
-      insertProcQ(&p_norm, tmp);
-      break;
-    case PRIO_HIGH:
-      insertProcQ(&p_high, tmp);
-      break;
+  if((tmp = headBlocked(semaddr)) != NULL){
+    if(tmp->sem_wait >= *semaddr){
+      tmp->state = READY;
+      /* Adding to proper queue */
+      switch(tmp->prio){
+      case PRIO_LOW:
+	insertProcQ(&p_low, tmp);
+	break;
+      case PRIO_NORM:
+	insertProcQ(&p_norm, tmp);
+	break;
+      case PRIO_HIGH:
+	insertProcQ(&p_high, tmp);
+	break;
+      }
+      tmp->sem_wait = 0;
+      outBlocked(tmp);
+      sb_count--;
     }
-    tmp->sem_wait = 0;
-    outBlocked(tmp);
-    sb_count--;
   }
 }
 
 void passeren(int *semaddr, int weight){
   if((*semaddr -= weight) < 0){
-    if((insertBlocked(semaddr, current) == TRUE){
+    if((insertBlocked(semaddr, current)) == TRUE){
 #ifdef DEBUG
       tprint("Non ci sono semafori liberi\n");
 #endif //DEBUG
       PANIC();
     }
-    current->state = WAIT;
+    current->state = WAITING;
     current->sem_wait = weight;
     sb_count++;
     scheduler();

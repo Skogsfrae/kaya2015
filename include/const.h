@@ -3,6 +3,8 @@
 
 #include <arch.h>
 
+#define DEBUG
+
 #define MAXPROC 20
 #define NULL ((void *)0)
 #define TRUE 1
@@ -14,7 +16,7 @@
 
 #define RUNNING 0
 #define READY 1
-#define WAIT 2
+#define WAITING 2
 
 typedef unsigned int U32;
 typedef signed int S32;
