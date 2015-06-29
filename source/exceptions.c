@@ -6,9 +6,12 @@
 #include <types.h>
 #include <const.h>
 
+#define DEBUG
+
 void pgmtrap_handler(void);
 
 void copy_state(state_t *dest, state_t *src){
+
   dest->a1 = src->a1;
   dest->a2 = src->a2;
   dest->a3 = src->a3;
@@ -33,7 +36,7 @@ void copy_state(state_t *dest, state_t *src){
 }
 
 void syscall_handler(void){
-  unsigned int sys_num, arg1, arg2, arg3, ret_value;
+  unsigned int sys_num, arg1, arg2, arg3, ret_value, cause;
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)SYSBK_OLDAREA;
 
@@ -42,28 +45,44 @@ void syscall_handler(void){
 #endif
 
   /* Used to compute kernel time */
+#ifdef DEBUG
+  tprint("Syshandler: getting TOD\n");
+#endif
   kernel_time1 = getTODLO();
 
   /* If not excvector and no SYS5, genocidio again */
-  if(!current->bool_excvector && (sys_num != SPECTRAPVEC)){
-    terminate_process(current->pid);
-    scheduler();
-  }
+#ifdef DEBUG
+  tprint("Syshandler: copying state\n");
+#endif
+  copy_state(&current->excvector[EXCP_SYS_OLD], state);
 
-  copy_state(current->excvector[EXCP_SYS_OLD], state);
-
+#ifdef DEBUG
+  tprint("Syshandler: getting cause\n");
+#endif
+  cause = state->CP15_Cause; //getCAUSE();
+  
   /* Breakpoint or syscall?? */
-  switch(getCAUSE()){
+  switch(cause){
   case EXC_BREAKPOINT:
+#ifdef DEBUG
+    tprint("Syshandler: this is a breakpoint\n");
+#endif
+    if(!current->bool_excvector && (sys_num != SPECTRAPVEC)){
+      terminate_process(current->pid);
+      scheduler();
+    }
     break;
   case EXC_SYSCALL:
-    if(!(current->p_s.cpsr & STATUS_SYS_MODE)){
+#ifdef DEBUG
+    tprint("Syshandler: this is a syscall\n");
+#endif
+    if((current->p_s.cpsr & STATUS_SYS_MODE)){
 #ifdef DEBUG
       tprint("Syshandler: passing to pgmtrap\n");
 #endif
-      copy_state(current->excvector[EXCP_PGMT_OLD],
-		 current->excvector[EXCP_SYS_OLD]);
-      CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD]->CP15_Cause,
+      copy_state(&current->excvector[EXCP_PGMT_OLD],
+		 &current->excvector[EXCP_SYS_OLD]);
+      CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD].CP15_Cause,
 			EXC_RESERVEDINSTR);
       kernel_time2 = getTODLO();
       current->kernel_time += kernel_time2 - kernel_time1;
@@ -71,18 +90,20 @@ void syscall_handler(void){
     }
     
     /* Take sys_num and args */
-    sys_num = current->p_s.a1;
-    arg1 = current->p_s.a2;
-    arg2 = current->p_s.a3;
-    arg3 = current->p_s.a4;
+    sys_num = state->a1;
+    arg1 = state->a2;
+    arg2 = state->a3;
+    arg3 = state->a4;
 
-    if(sys_num > SYSCALL_MAX){
+    if(sys_num > SYSCALL_MAX || sys_num < 0){
 #ifdef DEBUG
       tprint("Syshandler: non existing syscall\n");
 #endif
       PANIC();
     }
-
+#ifdef DEBUG
+    tprint("Syshandler: dispatch\n");
+#endif
     /* Syscall dispatch */
     switch(sys_num){
     case CREATEPROCESS:
@@ -133,13 +154,26 @@ void syscall_handler(void){
 #endif
       current->p_s.a1 = get_ppid();
       break;
+    default:
+#ifdef DEBUG
+      tprint("Syshandler: wrong syscall\n");
+#endif
+      PANIC();
+      break;
     }
+    break;
+  default:
+    PANIC();
+    break;
   }
 
+#ifdef DEBUG
+  tprint("Syshandler: fine\n");
+#endif
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  current->excvector[EXCP_SYS_NEW]->pc++;
-  LDST(current->excvector[EXCP_SYS_NEW]);
+  current->p_s.pc++;
+  LDST(&current->p_s);
 }
 
 void pgmtrap_handler(void){
@@ -156,10 +190,10 @@ void pgmtrap_handler(void){
     scheduler();
   }
   
-  copy_state(current->excvector[EXCP_PGMT_OLD], state);
+  copy_state(&current->excvector[EXCP_PGMT_OLD], state);
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  LDST(current->excvector[EXCP_PGMT_NEW]);
+  LDST(&current->excvector[EXCP_PGMT_NEW]);
 }
 
 void tlb_handler(void){
@@ -176,8 +210,8 @@ void tlb_handler(void){
     scheduler();
   }
   
-  copy_state(current->excvector[EXCP_TLB_OLD], state);
+  copy_state(&current->excvector[EXCP_TLB_OLD], state);
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  LDST(current->excvector[EXCP_TLB_NEW]);
+  LDST(&current->excvector[EXCP_TLB_NEW]);
 }

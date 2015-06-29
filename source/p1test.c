@@ -57,7 +57,7 @@ void adderrbuf(char *strp) {
 	PANIC();
 }
 
-int main() {
+int test() {
 	int i;
 
 	initPcbs();

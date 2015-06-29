@@ -10,6 +10,8 @@
 #include <exceptions.h>
 #include <interrupts.h>
 
+//#define DEBUG
+
 int dev_sem[MAX_DEVICES];
 struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
 struct termreg_t *terminals[DEV_PER_INT];
@@ -85,7 +87,6 @@ void main(void){
     terminals[i] = (memaddr)addr;
     addr += 0x10;
   }
-    
 
   /* 5 */
 #ifdef DEBUG
@@ -96,7 +97,7 @@ void main(void){
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE | STATUS_ENABLE_INT(fproc.cpsr)
     | STATUS_ENABLE_TIMER(fproc.cpsr);
   fproc.sp = RAM_TOP - FRAMESIZE;
-  fproc.pc = (memaddr)test;
+  fproc.pc = (memaddr)&test;
   create_process(&fproc, PRIO_NORM);
   
   /* if( (first = allocPcb()) == NULL) */
@@ -122,6 +123,7 @@ void main(void){
   /* a cosa puntano sp e pc? */
 
   /* 7 */
+  LDST(&fproc);
 #ifdef DEBUG
   tprint("Calling scheduler\n");
 #endif

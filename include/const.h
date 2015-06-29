@@ -3,7 +3,7 @@
 
 #include <arch.h>
 
-#define DEBUG
+//#define DEBUG
 
 #define MAXPROC 20
 #define NULL ((void *)0)

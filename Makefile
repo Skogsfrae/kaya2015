@@ -65,4 +65,4 @@ p1test.o: $(sourcedir)p1test.c
 
 clean:
 	@echo "Cleaning object files"
-	rm -rf $(sourcedir)*.o *.uarm p1test
+	rm -rf $(sourcedir)*.o *.uarm initial

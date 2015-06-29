@@ -9,6 +9,8 @@
 #include <interrupts.h>
 #include <uARMtypes.h>
 
+extern void copy_state(state_t *dest, state_t *src);
+
 /* Soluzione adottata nella versione 0.01 di linux
 static pid_t lastpid = -1;  -1 no process executing */
 unsigned int pid_bitmap = 0;
@@ -103,8 +105,8 @@ int create_process(state_t *statep, priority_enum prio)
 
   newp->prio = prio;
 
-  for(i=0; i<6; i++)
-    newp->excvector[i] = NULL;
+  /* for(i=0; i<6; i++) */
+  /*   newp->excvector[i] = NULL; */
   newp->bool_excvector = FALSE;
 
   newp->sem_wait = 0;
@@ -212,7 +214,8 @@ void specify_exception_state_vector(state_t **state_vector){
     terminate_process(current->pid);
 
   for(i=0; i<6; i++)
-    current->excvector[i] = state_vector[i];
+    copy_state(&current->excvector[i], state_vector[i]);
+    //current->excvector[i] = state_vector[i];
 
   current->bool_excvector = TRUE;
 }

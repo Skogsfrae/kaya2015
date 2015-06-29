@@ -6,6 +6,8 @@
 #include <uARMconst.h>
 #include <uARMtypes.h>
 
+#define DEBUG
+
 state_t *state = (state_t *)INT_OLDAREA;
 int status_word[DEV_USED_INTS+1][DEV_PER_INT];
 

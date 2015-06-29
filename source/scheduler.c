@@ -28,7 +28,7 @@ void scheduler(void){
      * 5 lanciare il prossimo processo (ldst)
      */
     if((clock_ticks++) == 20){
-      if((headBlocked(&dev_sem[CLOCK_SEM])) != NULL)
+      if(headBlocked(&dev_sem[CLOCK_SEM]) != NULL)
 	verhogen(&dev_sem[CLOCK_SEM], 1);
       clock_ticks = 0;
     }
@@ -41,11 +41,11 @@ void scheduler(void){
 #endif
       if(current->state != WAITING){
 	current->state = READY;
-#ifdef DEBUG
-	tprint("Scheduler: ahahah!\n");
-#endif
 	switch(current->prio){
 	case PRIO_LOW:
+#ifdef DEBUG
+	  tprint("Scheduler: prio_low\n");
+#endif
 	  insertProcQ(&p_low, current);
 	  break;
 	case PRIO_NORM:
@@ -55,6 +55,9 @@ void scheduler(void){
 	  insertProcQ(&p_norm, current);
 	  break;
 	case PRIO_HIGH:
+#ifdef DEBUG
+	  tprint("Scheduler: prio_high\n");
+#endif
 	  insertProcQ(&p_high, current);
 	  break;
 	}
@@ -66,6 +69,9 @@ void scheduler(void){
 #endif
     if( (current = headProcQ(&p_high))
 	!= NULL && (current->state != WAITING)){
+#ifdef DEBUG
+      tprint("Scheduler: coda p_high\n");
+#endif
       outProcQ(&p_high, current);
       current->elapsed_time = tod;
       current->state = RUNNING;
@@ -73,9 +79,9 @@ void scheduler(void){
     else{
       if( (current = headProcQ(&p_norm))
 	  != NULL && (current->state != WAITING)){
-	#ifdef DEBUG
-	tprint("Scheduler: corretto\n");
-	#endif
+#ifdef DEBUG
+	tprint("Scheduler: coda p_norm\n");
+#endif
 	outProcQ(&p_norm, current);
 	current->elapsed_time = tod;
 	current->state = RUNNING;
@@ -83,14 +89,21 @@ void scheduler(void){
       else{
 	if( (current = headProcQ(&p_low))
 	    != NULL && (current->state != WAITING)){
+#ifdef DEBUG
+	  tprint("Scheduler: coda p_low\n");
+#endif
 	  outProcQ(&p_low, current);
 	  current->elapsed_time = tod;
 	  current->state = RUNNING;
 	}
 	else{
 	  /* shut down */
-	  if(pc_count == 0)
+	  if(pc_count == 0){
+#ifdef DEBUG
+	    tprint("Scheduler: shutting down\n");
+#endif
 	    HALT();
+	  }
 	  else{
 	    /* deadlock */
 	    if(pc_count > 0 && sb_count == 0){
@@ -98,8 +111,8 @@ void scheduler(void){
 	      tprint("Scheduler: deadlock\n");
 #endif
 	      PANIC();
-	    /* idle */
 	    }
+	    /* idle */
 	    else{
 #ifdef DEBUG
 	      tprint("Scheduler: calling idle process\n");
@@ -113,9 +126,9 @@ void scheduler(void){
       }
     }
 
-    #ifdef DEBUG
+#ifdef DEBUG
     tprint("Scheduler: setting timer\n");
-    #endif
+#endif
 
     setTIMER(SCHED_TIME_SLICE);
     LDST(&(current->p_s));

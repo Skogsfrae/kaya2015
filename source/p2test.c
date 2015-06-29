@@ -40,6 +40,8 @@
 
 #include <pcb.h>
 
+//#define DEBUG
+
 typedef unsigned int devregtr;
 /* if these are not defined */
 typedef U32 cpu_t;
@@ -171,6 +173,10 @@ void print(char *msg) {
 void test() {	
 	cpu_t		time1, time2;
 	pid_t	fpid;
+
+#ifdef DEBUG
+	tprint("Test: ciao\n");
+#endif
 
 	SYSCALL(VERHOGEN, (int)&testsem, 1, 0);					/* V(testsem)   */
 
