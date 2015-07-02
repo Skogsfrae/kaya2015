@@ -40,8 +40,6 @@
 
 #include <pcb.h>
 
-//#define DEBUG
-
 typedef unsigned int devregtr;
 /* if these are not defined */
 typedef U32 cpu_t;
@@ -142,7 +140,7 @@ void print(char *msg) {
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
 	
-	SYSCALL(PASSEREN, (int)&term_mut, 1, 0);				/* get term_mut lock */
+	SYSCALL(PASSEREN, (int)&term_mut, 1, 0);    /* get term_mut lock */
 	
 	while (*s != '\0') {
 	  /* Put "transmit char" command+char in term0 register (3rd word). This 
@@ -173,10 +171,6 @@ void print(char *msg) {
 void test() {	
 	cpu_t		time1, time2;
 	pid_t	fpid;
-
-#ifdef DEBUG
-	tprint("Test: ciao\n");
-#endif
 
 	SYSCALL(VERHOGEN, (int)&testsem, 1, 0);					/* V(testsem)   */
 

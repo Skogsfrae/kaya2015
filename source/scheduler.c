@@ -1,4 +1,5 @@
 #include <pcb.h>
+#include <asl.h>
 #include <const.h>
 #include <types.h>
 #include <syscall.h>
@@ -7,18 +8,12 @@
 #include <uARMtypes.h>
 #include <uARMconst.h>
 
-struct list_head p_low=LIST_HEAD_INIT(p_low);
-struct list_head p_norm=LIST_HEAD_INIT(p_norm);
-struct list_head p_high=LIST_HEAD_INIT(p_high);
-struct list_head p_idle=LIST_HEAD_INIT(p_idle);
+//#define DEBUG
+
 cputime_t tick, tod;
-pcb_t *current;
-int pc_count;
-int sb_count;
 int clock_ticks = 0;
 
 void scheduler(void){
-
   // while(1){
     /* 
      * 1 aggiornare il timer di current
@@ -28,7 +23,7 @@ void scheduler(void){
      * 5 lanciare il prossimo processo (ldst)
      */
     if((clock_ticks++) == 20){
-      if(headBlocked(&dev_sem[CLOCK_SEM]) != NULL)
+      while(headBlocked(&dev_sem[CLOCK_SEM]) != NULL)
 	verhogen(&dev_sem[CLOCK_SEM], 1);
       clock_ticks = 0;
     }

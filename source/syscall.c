@@ -142,7 +142,7 @@ static pcb_t *terminate_children(struct pcb_t *parent){
 void terminate_process(pid_t pid){
   struct pcb_t *parent, *child;
   int pidmask = get_bit_mask(pid);
-
+  
   parent = pidmap[pid - 1];
   outChild(parent);
 

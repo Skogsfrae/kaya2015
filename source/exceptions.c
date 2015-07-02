@@ -3,15 +3,16 @@
 #include <scheduler.h>
 #include <syscall.h>
 #include <libuarm.h>
+#include <initial.h>
 #include <types.h>
 #include <const.h>
+#include <arch.h>
 
-#define DEBUG
+//#define DEBUG
 
 void pgmtrap_handler(void);
 
 void copy_state(state_t *dest, state_t *src){
-
   dest->a1 = src->a1;
   dest->a2 = src->a2;
   dest->a3 = src->a3;
@@ -50,7 +51,6 @@ void syscall_handler(void){
 #endif
   kernel_time1 = getTODLO();
 
-  /* If not excvector and no SYS5, genocidio again */
 #ifdef DEBUG
   tprint("Syshandler: copying state\n");
 #endif
@@ -67,7 +67,8 @@ void syscall_handler(void){
 #ifdef DEBUG
     tprint("Syshandler: this is a breakpoint\n");
 #endif
-    if(!current->bool_excvector && (sys_num != SPECTRAPVEC)){
+    /* If not excvector and no SYS5, genocidio again */
+    if(!current->bool_excvector){
       terminate_process(current->pid);
       scheduler();
     }
@@ -76,11 +77,11 @@ void syscall_handler(void){
 #ifdef DEBUG
     tprint("Syshandler: this is a syscall\n");
 #endif
-    if((current->p_s.cpsr & STATUS_SYS_MODE)){
+    if(!(current->p_s.cpsr & STATUS_SYS_MODE)){
 #ifdef DEBUG
       tprint("Syshandler: passing to pgmtrap\n");
 #endif
-      copy_state(&current->excvector[EXCP_PGMT_OLD],
+      copy_state((state_t *)PGMTRAP_OLDAREA,
 		 &current->excvector[EXCP_SYS_OLD]);
       CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD].CP15_Cause,
 			EXC_RESERVEDINSTR);
@@ -110,7 +111,7 @@ void syscall_handler(void){
 #ifdef DEBUG
       tprint("Syshandler: createprocess\n");
 #endif
-      current->p_s.a1 = create_process((state_t*)arg1, (priority_enum)arg2);
+      current->p_s.a1 = create_process((memaddr)arg1, (priority_enum)arg2);
       break;
     case TERMINATEPROCESS:
 #ifdef DEBUG
@@ -128,19 +129,19 @@ void syscall_handler(void){
 #ifdef DEBUG
       tprint("Syshandler: passeren\n");
 #endif
-      passeren((int*)arg1, arg2);
+      passeren(arg1, arg2);
       break;
     case SPECTRAPVEC:
 #ifdef DEBUG
       tprint("Syshandler: systrapvect\n");
 #endif
-      specify_exception_state_vector((state_t**)arg1);
+      specify_exception_state_vector((memaddr)arg1);
       break;
     case GETCPUTIME:
 #ifdef DEBUG
       tprint("Syshandler: cputime\n");
 #endif
-      get_cpu_time((cputime_t*)arg1, (cputime_t*)arg2);
+      get_cpu_time((memaddr)arg1, (memaddr)arg2);
       break;
     case GETPID:
 #ifdef DEBUG
@@ -154,17 +155,17 @@ void syscall_handler(void){
 #endif
       current->p_s.a1 = get_ppid();
       break;
-    default:
-#ifdef DEBUG
-      tprint("Syshandler: wrong syscall\n");
-#endif
-      PANIC();
-      break;
+/*     default: */
+/* #ifdef DEBUG */
+/*       tprint("Syshandler: wrong syscall\n"); */
+/* #endif */
+/*       PANIC(); */
+/*       break; */
     }
     break;
-  default:
-    PANIC();
-    break;
+  /* default: */
+  /*   PANIC(); */
+  /*   break; */
   }
 
 #ifdef DEBUG
@@ -172,8 +173,9 @@ void syscall_handler(void){
 #endif
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  current->p_s.pc++;
-  LDST(&current->p_s);
+  current->p_s.pc += WS;
+  //copy_state(&current->p_s, &current->excvector[EXCP_SYS_OLD]);
+  LDST(&current->excvector[EXCP_SYS_OLD]);
 }
 
 void pgmtrap_handler(void){

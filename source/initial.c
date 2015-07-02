@@ -12,6 +12,13 @@
 
 //#define DEBUG
 
+pcb_t *current;
+int pc_count;
+int sb_count;
+struct list_head p_low=LIST_HEAD_INIT(p_low);
+struct list_head p_norm=LIST_HEAD_INIT(p_norm);
+struct list_head p_high=LIST_HEAD_INIT(p_high);
+struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
 struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
 struct termreg_t *terminals[DEV_PER_INT];
@@ -33,27 +40,27 @@ void main(void){
     switch(i){
     case 0:
       new_areas[i] = (state_t*)INT_NEWAREA;
-      new_areas[i]->pc = (memaddr)&interrupt_handler;
+      new_areas[i]->pc = (memaddr)interrupt_handler;
       break;
     case 1:
       new_areas[i] = (state_t*)TLB_NEWAREA;
-      new_areas[i]->pc = (memaddr)&tlb_handler;
+      new_areas[i]->pc = (memaddr)tlb_handler;
       break;
     case 2:
       new_areas[i] = (state_t*)PGMTRAP_NEWAREA;
-      new_areas[i]->pc = (memaddr)&pgmtrap_handler;
+      new_areas[i]->pc = (memaddr)pgmtrap_handler;
       break;
     case 3:
       new_areas[i] = (state_t*)SYSBK_NEWAREA;
-      new_areas[i]->pc = (memaddr)&syscall_handler;
+      new_areas[i]->pc = (memaddr)syscall_handler;
       break;
     }
 
     new_areas[i]->sp = RAM_TOP;
     new_areas[i]->cpsr = STATUS_NULL;
-    new_areas[i]->cpsr = STATUS_SYS_MODE
-      | STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr)
-      | STATUS_DISABLE_TIMER(new_areas[i]->cpsr);
+    new_areas[i]->cpsr = new_areas[i]->cpsr | STATUS_SYS_MODE;
+    new_areas[i]->cpsr = STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr);
+    //new_areas[i]->cpsr = STATUS_DISABLE_TIMER(new_areas[i]->cpsr);
   }
 
   /* 2 */
@@ -94,10 +101,11 @@ void main(void){
 #endif
 
   fproc.cpsr = STATUS_NULL;
-  fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE | STATUS_ENABLE_INT(fproc.cpsr)
-    | STATUS_ENABLE_TIMER(fproc.cpsr);
-  fproc.sp = RAM_TOP - FRAMESIZE;
-  fproc.pc = (memaddr)&test;
+  fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
+  fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
+  //  fproc.cpsr = STATUS_ENABLE_TIMER(fproc.cpsr);
+  fproc.sp = RAM_TOP - FRAMESIZE*2;
+  fproc.pc = (memaddr)test;
   create_process(&fproc, PRIO_NORM);
   
   /* if( (first = allocPcb()) == NULL) */
@@ -123,7 +131,7 @@ void main(void){
   /* a cosa puntano sp e pc? */
 
   /* 7 */
-  LDST(&fproc);
+  //  LDST(&fproc);
 #ifdef DEBUG
   tprint("Calling scheduler\n");
 #endif

@@ -6,28 +6,60 @@
 #include <uARMconst.h>
 #include <uARMtypes.h>
 
-#define DEBUG
+//#define DEBUG
 
 state_t *state = (state_t *)INT_OLDAREA;
 int status_word[DEV_USED_INTS+1][DEV_PER_INT];
 
 void interrupt_handler(void){
-  cputime_t kernel_time1, kernel_time2;
+  cputime_t kernel_time1, kernel_time2, tod;
   int *dev_bitmap;
   int cause, dnum;
 
   kernel_time1 = getTODLO();
 
-  cause = state->CP15_Cause;
+  cause = getCAUSE(); //state->CP15_Cause;
 #ifdef DEBUG
   tprint("Interrupt\n");
 #endif
+
+/*       if(current != NULL){     */
+/*       tod = getTODLO(); */
+/*       current->global_time += tod - current->elapsed_time; */
+/* #ifdef DEBUG */
+/*       tprint("Interrupt: metto il processo in coda\n"); */
+/* #endif */
+/*       if(current->state != WAITING){ */
+/* 	current->state = READY; */
+/* 	switch(current->prio){ */
+/* 	case PRIO_LOW: */
+/* #ifdef DEBUG */
+/* 	  tprint("Interrupt: prio_low\n"); */
+/* #endif */
+/* 	  insertProcQ(&p_low, current); */
+/* 	  break; */
+/* 	case PRIO_NORM: */
+/* #ifdef DEBUG */
+/* 	  tprint("Interrupt: prio_norm\n"); */
+/* #endif */
+/* 	  insertProcQ(&p_norm, current); */
+/* 	  break; */
+/* 	case PRIO_HIGH: */
+/* #ifdef DEBUG */
+/* 	  tprint("Interrupt: prio_high\n"); */
+/* #endif */
+/* 	  insertProcQ(&p_high, current); */
+/* 	  break; */
+/* 	} */
+/*       } */
+  //}
   
   if(CAUSE_IP_GET(cause, INT_TIMER)){
 #ifdef DEBUG
     tprint("Interrupt: gestione timer\n");
 #endif
     setSTATUS(STATUS_DISABLE_TIMER(getSTATUS()));
+    scheduler();
   }
   else{
       if(CAUSE_IP_GET(cause, INT_DISK)){
@@ -86,6 +118,9 @@ void interrupt_handler(void){
 	      dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	      /* read */
 	      if(terminals[dnum]->recv_status & DEV_TRCV_S_CHARRECV){
+#ifdef DEBUG
+		tprint("Interrupt: terminal char recv\n");
+#endif
 		status_word[INT_TERMINAL-2][dnum] =
 		  terminals[dnum]->recv_status;
 		terminals[dnum]->recv_command = DEV_C_ACK;
@@ -94,6 +129,9 @@ void interrupt_handler(void){
 	      }
 	      /* transmit */
 	      if(terminals[dnum]->transm_status & DEV_TTRS_S_CHARTRSM){
+#ifdef DEBUG
+		tprint("Interrupt: terminal char trsm\n");
+#endif
 		status_word[INT_TERMINAL-3][dnum] =
 		  terminals[dnum]->transm_status;
 		terminals[dnum]->transm_command = DEV_C_ACK;
@@ -105,6 +143,6 @@ void interrupt_handler(void){
       }
     }
   }
-  
+
   scheduler();
 }
