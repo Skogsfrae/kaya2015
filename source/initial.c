@@ -87,11 +87,11 @@ void main(void){
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
   for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
-    devices[i] = (memaddr)addr;
+    devices[i] = (dtpreg_t*)(addr);
     addr += 0x10;
   }
   for(i=0; i<DEV_PER_INT; i++){
-    terminals[i] = (memaddr)addr;
+    terminals[i] = (termreg_t*)(addr);
     addr += 0x10;
   }
 
@@ -104,7 +104,7 @@ void main(void){
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
   fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
   //  fproc.cpsr = STATUS_ENABLE_TIMER(fproc.cpsr);
-  fproc.sp = RAM_TOP - FRAMESIZE*2;
+  fproc.sp = RAM_TOP - FRAME_SIZE;
   fproc.pc = (memaddr)test;
   create_process(&fproc, PRIO_NORM);
   

@@ -26,6 +26,7 @@ void copy_state(state_t *dest, state_t *src){
   dest->sl = src->sl;
   dest->fp = src->fp;
   dest->ip = src->ip;
+  dest->sp = src->sp;
   dest->lr = src->lr;
   dest->pc = src->pc;
   dest->cpsr = src->cpsr;
@@ -62,7 +63,7 @@ void syscall_handler(void){
   cause = state->CP15_Cause; //getCAUSE();
   
   /* Breakpoint or syscall?? */
-  switch(cause){
+  switch(CAUSE_EXCCODE_GET(cause)){
   case EXC_BREAKPOINT:
 #ifdef DEBUG
     tprint("Syshandler: this is a breakpoint\n");
@@ -181,6 +182,11 @@ void syscall_handler(void){
 void pgmtrap_handler(void){
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)PGMTRAP_OLDAREA;
+  unsigned int cause;
+
+  cause = state->CP15_Cause;
+  if(CAUSE_EXCCODE_GET(cause) == EXC_BUSINVFETCH)
+    HALT();
 
 #ifdef DEBUG
   tprint("Pgmtrap: ciao\n");
