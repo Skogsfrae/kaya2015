@@ -7,9 +7,9 @@
 #include <initial.h>
 #include <scheduler.h>
 #include <interrupts.h>
+#include <exceptions.h>
 #include <uARMtypes.h>
 
-extern void copy_state(state_t *dest, state_t *src);
 
 /* Soluzione adottata nella versione 0.01 di linux
 static pid_t lastpid = -1;  -1 no process executing */
@@ -30,28 +30,7 @@ int create_process(state_t *statep, priority_enum prio)
     return -1;
 
   /* Copy statep */
-  newp->p_s.a1 = statep->a1;
-  newp->p_s.a2 = statep->a2;
-  newp->p_s.a3 = statep->a3;
-  newp->p_s.a4 = statep->a4;
-  newp->p_s.v1 = statep->v1;
-  newp->p_s.v2 = statep->v2;
-  newp->p_s.v3 = statep->v3;
-  newp->p_s.v4 = statep->v4;
-  newp->p_s.v5 = statep->v5;
-  newp->p_s.v6 = statep->v6;
-  newp->p_s.sl = statep->sl;
-  newp->p_s.fp = statep->fp;
-  newp->p_s.ip = statep->ip;
-  newp->p_s.sp = statep->sp;
-  newp->p_s.lr = statep->lr;
-  newp->p_s.pc = statep->pc;
-  newp->p_s.cpsr = statep->cpsr;
-  newp->p_s.CP15_Control = statep->CP15_Control;
-  newp->p_s.CP15_EntryHi = statep->CP15_EntryHi;
-  newp->p_s.CP15_Cause = statep->CP15_Cause;
-  newp->p_s.TOD_Hi = statep->TOD_Hi;
-  newp->p_s.TOD_Low = statep->TOD_Low;
+  copy_state(&newp->p_s, statep);
 
   /* Set timers */
   newp->start_time = getTODLO();
@@ -172,21 +151,25 @@ void verhogen(int *semaddr, int weight){
   *semaddr += weight;
   if((tmp = headBlocked(semaddr)) != NULL){
     if(tmp->sem_wait >= *semaddr){
+      //tprint("Wait io funge?\n");
+      tmp->sem_wait = 0;
+      outBlocked(tmp);
       tmp->state = READY;
       /* Adding to proper queue */
       switch(tmp->prio){
       case PRIO_LOW:
+	tprint("prio sbagliata\n");
 	insertProcQ(&p_low, tmp);
 	break;
       case PRIO_NORM:
+	//tprint("prio corretta\n");
 	insertProcQ(&p_norm, tmp);
 	break;
       case PRIO_HIGH:
+	tprint("prio sbagliata\n");
 	insertProcQ(&p_high, tmp);
 	break;
       }
-      tmp->sem_wait = 0;
-      outBlocked(tmp);
       sb_count--;
     }
   }

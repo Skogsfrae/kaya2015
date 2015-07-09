@@ -20,3 +20,16 @@ int get_bit_mask(int bit){
 
   return mask <<= bit;
 }
+
+int find_dev_mask(int dev){
+  int mask = 1;
+  int res = 0;
+
+  while(mask < dev){
+    if(mask & dev)
+      res = mask;
+    mask <<= 1;
+  }
+
+   return res;
+}

@@ -94,17 +94,17 @@ void scheduler(void){
 	else{
 	  /* shut down */
 	  if(pc_count == 0){
-#ifdef DEBUG
+	    //#ifdef DEBUG
 	    tprint("Scheduler: shutting down\n");
-#endif
+	    //#endif
 	    HALT();
 	  }
 	  else{
 	    /* deadlock */
 	    if(pc_count > 0 && sb_count == 0){
-#ifdef DEBUG
+	      //#ifdef DEBUG
 	      tprint("Scheduler: deadlock\n");
-#endif
+	      //#endif
 	      PANIC();
 	    }
 	    /* idle */

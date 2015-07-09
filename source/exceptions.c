@@ -130,7 +130,7 @@ void syscall_handler(void){
 #ifdef DEBUG
       tprint("Syshandler: passeren\n");
 #endif
-      passeren(arg1, arg2);
+      passeren((int *)arg1, arg2);
       break;
     case SPECTRAPVEC:
 #ifdef DEBUG
@@ -143,6 +143,18 @@ void syscall_handler(void){
       tprint("Syshandler: cputime\n");
 #endif
       get_cpu_time((memaddr)arg1, (memaddr)arg2);
+      break;
+    case WAITCLOCK:
+#ifdef DEBUG
+      tprint("Syshandler: waitclock\n");
+#endif
+      wait_for_clock();
+      break;
+    case WAITIO:
+#ifdef DEBUG
+      tprint("Syshandler: waitio\n");
+#endif
+      current->p_s.a1 = wait_for_io(arg1, arg2, arg3);
       break;
     case GETPID:
 #ifdef DEBUG

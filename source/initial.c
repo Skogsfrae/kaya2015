@@ -25,6 +25,10 @@ struct termreg_t *terminals[DEV_PER_INT];
 
 extern void test();
 
+void idlec(void){
+  while(1);
+}
+
 void main(void){
   /* 1 */
   state_t *new_areas[4];
@@ -128,6 +132,11 @@ void main(void){
   if( (idle = allocPcb()) == NULL)
     PANIC();
   idle->p_s.cpsr = STATUS_NULL;
+  idle->p_s.cpsr = idle->p_s.cpsr | STATUS_SYS_MODE;
+  idle->p_s.cpsr = STATUS_ALL_INT_ENABLE(idle->p_s.cpsr);
+  idle->p_s.sp = RAM_TOP - FRAMESIZE;
+  idle->p_s.pc = (memaddr)idlec;
+  insertProcQ(&p_idle, idle);
   /* a cosa puntano sp e pc? */
 
   /* 7 */
