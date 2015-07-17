@@ -1,6 +1,6 @@
 /* Gets bit number from bit mask */
 int get_bit_num(int bitmask){
-  int bit;
+  int bit=0;
 
   if(bitmask == 0)
     return 0;
@@ -8,10 +8,12 @@ int get_bit_num(int bitmask){
   while(bitmask > 0){
     if(bitmask&1 == 0)
       bit++;
+    else
+      break;
     bitmask >>=1;
   }
 
-  return bit++;
+  return bit;
 }
 
 /* Gets bit mask from bit number */
@@ -27,9 +29,10 @@ int find_dev_mask(int dev){
 
   while(mask < dev){
     if(mask & dev)
-      res = mask;
+      break;
+      //res = mask;
     mask <<= 1;
   }
 
-   return res;
+   return mask;
 }

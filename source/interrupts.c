@@ -19,6 +19,8 @@ void interrupt_handler(void){
 
   kernel_time1 = getTODLO();
 
+  //copy_state(&current->p_s, state);
+
   cause = getCAUSE(); //state->CP15_Cause;
 #ifdef DEBUG
   tprint("Interrupt\n");
@@ -87,26 +89,26 @@ void interrupt_handler(void){
 	      dev_bitmap = (memaddr)0x6FF0;
 	      dnum = get_bit_num(find_dev_mask(*dev_bitmap));
 	      /* read */
-	      if((terminals[dnum-1]->recv_status &  DEV_TRCV_S_CHARRECV)
+	      if((terminals[dnum]->recv_status &  DEV_TRCV_S_CHARRECV)
 		 == DEV_TRCV_S_CHARRECV){
 #ifdef DEBUG
 		tprint("Interrupt: terminal char recv\n");
 #endif
 		status_word[INT_TERMINAL-2][dnum] =
-		  terminals[dnum-1]->recv_status;
-		terminals[dnum-1]->recv_command = DEV_C_ACK;
+		  terminals[dnum]->recv_status;
+		terminals[dnum]->recv_command = DEV_C_ACK;
 		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT +
 				  DEV_PER_INT + dnum], 1);
 	      }
 	      /* transmit */
-	      if((terminals[dnum-1]->transm_status & DEV_TTRS_S_CHARTRSM)
+	      if((terminals[dnum]->transm_status & DEV_TTRS_S_CHARTRSM)
 		 == DEV_TTRS_S_CHARTRSM){
 #ifdef DEBUG
 		tprint("Interrupt: terminal char trsm\n");
 #endif
 		status_word[INT_TERMINAL-3][dnum] =
-		  terminals[dnum-1]->transm_status;
-		terminals[dnum-1]->transm_command = DEV_C_ACK;
+		  terminals[dnum]->transm_status;
+		terminals[dnum]->transm_command = DEV_C_ACK;
 		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT + dnum], 1);
 	      }
 	    }
