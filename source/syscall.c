@@ -11,8 +11,8 @@
 #include <uARMtypes.h>
 
 
-/* Soluzione adottata nella versione 0.01 di linux
-static pid_t lastpid = -1;  -1 no process executing */
+/* Soluzione adottata nella versione 0.01 di linux     */
+/* static pid_t lastpid = -1;  -1 no process executing */
 unsigned int pid_bitmap = 0;
 unsigned int free_pidmap = 0xFFFFF;
 pid_t last_pid = 0, last_freed_pid = 0;
@@ -38,8 +38,8 @@ int create_process(state_t *statep, priority_enum prio)
   newp->kernel_time = 0;
   newp->global_time = 0;
 	
-  /* Vale sia come caso base (primo programma da eseguire),
-  ** sia come caso in cui incrementalmente vengono creati processi */
+  /* Vale sia come caso base (primo programma da eseguire),        */
+  /* sia come caso in cui incrementalmente vengono creati processi */
   if(last_pid == last_freed_pid){
     tmp_bitmap = pid_bitmap;
     pid_bitmap <<= 1;
@@ -95,7 +95,8 @@ int create_process(state_t *statep, priority_enum prio)
   return newp->pid;
 }
 
-static pcb_t *terminate_children(struct pcb_t *parent){
+static pcb_t *terminate_children(struct pcb_t *parent)
+{
   int pidmask = get_bit_mask(parent->pid);
   while(emptyChild(parent))
     freePcb(terminate_children(headProcQ(&parent->p_children)));
@@ -118,7 +119,8 @@ static pcb_t *terminate_children(struct pcb_t *parent){
 }
 
 /* Bisogna valutare il caso che il processo sia in una coda di un semaforo */
-void terminate_process(pid_t pid){
+void terminate_process(pid_t pid)
+{
   struct pcb_t *parent, *child;
   int pidmask = get_bit_mask(pid);
   
@@ -146,7 +148,8 @@ void terminate_process(pid_t pid){
   pidmap[pid - 1] = NULL;
 }
 
-void verhogen(int *semaddr, int weight){
+void verhogen(int *semaddr, int weight)
+{
   pcb_t *tmp;
   *semaddr += weight;
   if((tmp = headBlocked(semaddr)) != NULL){
@@ -175,7 +178,8 @@ void verhogen(int *semaddr, int weight){
   }
 }
 
-void passeren(int *semaddr, int weight){
+void passeren(int *semaddr, int weight)
+{
   if((*semaddr -= weight) < 0){
     if((insertBlocked(semaddr, current)) == TRUE){
 #ifdef DEBUG
@@ -190,7 +194,8 @@ void passeren(int *semaddr, int weight){
   }
 }
 
-void specify_exception_state_vector(state_t **state_vector){
+void specify_exception_state_vector(state_t **state_vector)
+{
   int i;
 
   if(current->bool_excvector == TRUE)
@@ -198,21 +203,23 @@ void specify_exception_state_vector(state_t **state_vector){
 
   for(i=0; i<6; i++)
     copy_state(&current->excvector[i], state_vector[i]);
-    //current->excvector[i] = state_vector[i];
 
   current->bool_excvector = TRUE;
 }
 
-void get_cpu_time(cputime_t *global, cputime_t *user){
+void get_cpu_time(cputime_t *global, cputime_t *user)
+{
   *global = current->global_time;
   *user = current->global_time - current->kernel_time;
 }
 
-void wait_for_clock(void){
+void wait_for_clock(void)
+{
   passeren(&dev_sem[CLOCK_SEM], 1);
 }
 
-unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
+unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead)
+{
   int read = 0;
   int stat_word;
 
@@ -221,6 +228,8 @@ unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
     read = DEV_PER_INT;
   passeren(&dev_sem[(intlNo-3)*DEV_PER_INT + read + dnum], 1);
 
+  /* La status word viene presa dalla matrice dichiarata */
+  /* nel file interrupts.c                               */
   if(intlNo == INT_TERMINAL){
     if(waitForTermRead)
       stat_word = status_word[INT_TERMINAL-2][dnum];
@@ -233,10 +242,12 @@ unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead){
   return stat_word;
 }
 
-pid_t get_pid(void){
+pid_t get_pid(void)
+{
   return current->pid;
 }
 
-pid_t get_ppid(void){
+pid_t get_ppid(void)
+{
   return current->p_parent->pid;
 }

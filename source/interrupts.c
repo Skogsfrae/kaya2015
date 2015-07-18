@@ -10,18 +10,21 @@
 //#define DEBUG
 
 state_t *state = (state_t *)INT_OLDAREA;
+/* Numero di interrupt lines +1 (2 per i terminali) */
 unsigned int status_word[DEV_USED_INTS+1][DEV_PER_INT];
 
-void interrupt_handler(void){
+void interrupt_handler(void)
+{
   cputime_t kernel_time1, kernel_time2, tod;
   unsigned int *dev_bitmap;
   unsigned int cause, dnum;
 
   kernel_time1 = getTODLO();
 
-  //copy_state(&current->p_s, state);
+  copy_state(&current->p_s, state);
+  current->p_s.pc = current->p_s.lr - WS;
 
-  cause = getCAUSE(); //state->CP15_Cause;
+  cause = getCAUSE();
 #ifdef DEBUG
   tprint("Interrupt\n");
 #endif
@@ -82,11 +85,15 @@ void interrupt_handler(void){
 	    verhogen(&dev_sem[(INT_PRINTER-3)*DEV_PER_INT + dnum], 1);
 	  }
 	  else{
+	    /* Gestione dei terminali */
 	    if(CAUSE_IP_GET(cause, INT_TERMINAL)){
 #ifdef DEBUG
 	      tprint("Interrupt: gestione terminal \n");
 #endif
 	      dev_bitmap = (memaddr)0x6FF0;
+	      /* DEBUG INFO le funzioni di gestione delle bitmap sono */
+	      /* corrette, altrimenti la verhogen dovrebbe sbloccare  */
+	      /* un altro semaforo e il processo restare bloccato     */
 	      dnum = get_bit_num(find_dev_mask(*dev_bitmap));
 	      /* read */
 	      if((terminals[dnum]->recv_status &  DEV_TRCV_S_CHARRECV)
