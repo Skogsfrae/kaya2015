@@ -26,3 +26,6 @@ Nell'init lascio variabili e for.
 
 3)
 sistemato l'errore a compile. A me non da nessun cambiamento in debug (sempre system halted).
+
+4)
+va in loop nel syshandler ora, credo ci sia una sys che non worka, vedo di capire quale

@@ -20,8 +20,8 @@ struct list_head p_norm=LIST_HEAD_INIT(p_norm);
 struct list_head p_high=LIST_HEAD_INIT(p_high);
 struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
-struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
-struct termreg_t *terminals[DEV_PER_INT];
+//struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
+//struct termreg_t *terminals[DEV_PER_INT];
 
 extern void test();
 
@@ -90,14 +90,14 @@ void main(void){
 #endif
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
-  for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
-    devices[i] = (dtpreg_t*)(addr);
-    addr += 0x10;
+  /*for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
+     devices[i] = (dtpreg_t*)(addr);
+     addr += 0x10;
   }
   for(i=0; i<DEV_PER_INT; i++){
     terminals[i] = (termreg_t*)(addr);
     addr += 0x10;
-  }
+  }*/
 
   /* 5 */
 #ifdef DEBUG

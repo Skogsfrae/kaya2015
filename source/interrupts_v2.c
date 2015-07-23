@@ -46,10 +46,10 @@ void interrupt_handler(void)
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	/* -3 perché negli array dei device/semafori si parte da **
 	** disk (INT_DISK = 3)  */
-	devAddrBase =  (memaddr) (0x1000.0050p0 + ((INT_DISK - 3) * 0x80) + (dnum * 0x10)); //Corretto, errore di esponente
+	devAddrBase =  (memaddr) (0x40 + ((INT_DISK - 3) * 0x80) + (dnum * 0x10)); //Corretto, errore di esponente
 	status_word[INT_DISK-3][dnum] = *devAddrBase;
 	devAddrBase += 0x4;
-	*devAddrBase + = DEV_C_ACK;
+	*devAddrBase = DEV_C_ACK;
 	verhogen(&dev_sem[(INT_DISK-3)*DEV_PER_INT + dnum], 1);
       }
     else{
@@ -59,7 +59,7 @@ void interrupt_handler(void)
 #endif
 	dev_bitmap = (memaddr)0x6FE4;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	devAddrBase = (memaddr) (0x1000.0050p0 + ((INT_TAPE - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	devAddrBase = (memaddr) (0x40 + ((INT_TAPE - 3) * 0x80) + (dnum * 0x10)); //Corretto
 	status_word[INT_TAPE-3][dnum] = *devAddrBase;
 	devAddrBase += 0x4;
 	*devAddrBase = DEV_C_ACK;
@@ -72,7 +72,7 @@ void interrupt_handler(void)
 #endif
 	  dev_bitmap = (memaddr)0x6FE8;
 	  dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	  devAddrBase = (memaddr) (0x1000.0050p0 + ((INT_UNUSED - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	  devAddrBase = (memaddr) (0x40 + ((INT_UNUSED - 3) * 0x80) + (dnum * 0x10)); //Corretto
 	  status_word[INT_UNUSED-3][dnum] = *devAddrBase;
 	  devAddrBase += 0x4;
 	  *devAddrBase = DEV_C_ACK;
@@ -85,7 +85,7 @@ void interrupt_handler(void)
 #endif
 	    dev_bitmap = (memaddr)0x6FEC;
 	    dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	    devAddrBase =  (memaddr) (0x1000.0050p0 + ((INT_PRINTER - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	    devAddrBase =  (memaddr) (0x40 + ((INT_PRINTER - 3) * 0x80) + (dnum * 0x10)); //Corretto
 	    status_word[INT_PRINTER-3][dnum] = *devAddrBase;
 	    devAddrBase += 0x4;
 	    *devAddrBase = DEV_C_ACK;
@@ -102,7 +102,7 @@ void interrupt_handler(void)
 	      /* corrette, altrimenti la verhogen dovrebbe sbloccare  */
 	      /* un altro semaforo e il processo restare bloccato     */
 	      dnum = get_bit_num(find_dev_mask(*dev_bitmap));
-	      devAddrBase = (memaddr) (0x1000.0050p0 + ((INT_TERMINAL - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	      devAddrBase = (memaddr) (0x40 + ((INT_TERMINAL - 3) * 0x80) + (dnum * 0x10)); //Corretto
 	      /* read */
 	      if((*devAddrBase &  DEV_TRCV_S_CHARRECV)
 		 == DEV_TRCV_S_CHARRECV){
