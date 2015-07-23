@@ -55,7 +55,7 @@ void syscall_handler(void){
 #ifdef DEBUG
   tprint("Syshandler: copying state\n");
 #endif
-  copy_state(&current->excvector[EXCP_SYS_OLD], state);
+  copy_state(&current->p_s, state);
 
 #ifdef DEBUG
   tprint("Syshandler: getting cause\n");
@@ -82,10 +82,9 @@ void syscall_handler(void){
 #ifdef DEBUG
       tprint("Syshandler: passing to pgmtrap\n");
 #endif
-      copy_state((state_t *)PGMTRAP_OLDAREA,
-		 &current->excvector[EXCP_SYS_OLD]);
-      CAUSE_EXCCODE_SET(current->excvector[EXCP_PGMT_OLD].CP15_Cause,
+      CAUSE_EXCCODE_SET(current->p_s.CP15_Cause,
 			EXC_RESERVEDINSTR);
+      copy_state((state_t *)PGMTRAP_OLDAREA, &current->p_s);
       kernel_time2 = getTODLO();
       current->kernel_time += kernel_time2 - kernel_time1;
       pgmtrap_handler();
@@ -186,9 +185,10 @@ void syscall_handler(void){
 #endif
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  current->p_s.pc += WS;
+  current->p_s.pc = current->p_s.lr;
+  //current->p_s.pc += WS;
   //copy_state(&current->p_s, &current->excvector[EXCP_SYS_OLD]);
-  LDST(&current->excvector[EXCP_SYS_OLD]);
+  LDST(&current->p_s);
 }
 
 void pgmtrap_handler(void){
@@ -210,10 +210,10 @@ void pgmtrap_handler(void){
     scheduler();
   }
   
-  copy_state(&current->excvector[EXCP_PGMT_OLD], state);
+  copy_state(&current->p_s, state);
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  LDST(&current->excvector[EXCP_PGMT_NEW]);
+  LDST(&current->p_s);
 }
 
 void tlb_handler(void){
@@ -230,8 +230,8 @@ void tlb_handler(void){
     scheduler();
   }
   
-  copy_state(&current->excvector[EXCP_TLB_OLD], state);
+  copy_state(&current->p_s, state);
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
-  LDST(&current->excvector[EXCP_TLB_NEW]);
+  LDST(&current->p_s);
 }
