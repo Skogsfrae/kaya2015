@@ -23,3 +23,6 @@ La formula delle specifiche di umps da errore a compilazione (la prima costante 
 Domani controllo cosa può generarlo. Dai un occhio anche tu per sicurezza. 
 Aggiorno solo il file interrupts.c, creandolo nuovo (interrupts_v2.c)
 Nell'init lascio variabili e for.
+
+3)
+sistemato l'errore a compile. A me non da nessun cambiamento in debug (sempre system halted).
