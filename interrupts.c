@@ -12,6 +12,7 @@
 state_t *state = (state_t *)INT_OLDAREA;
 /* Numero di interrupt lines +1 (2 per i terminali) */
 unsigned int status_word[DEV_USED_INTS+1][DEV_PER_INT];
+unsigned int *devAddrBase;
 
 void interrupt_handler(void)
 {
@@ -44,9 +45,11 @@ void interrupt_handler(void)
 	dev_bitmap = (memaddr)0x6FE0;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	/* -3 perché negli array dei device/semafori si parte da **
-	** disk (INT_DISK = 3)                                   */
-	status_word[INT_DISK-3][dnum] = devices[(INT_DISK-3)+dnum]->status;
-	devices[(INT_DISK-3)+dnum]->command = DEV_C_ACK;
+	** disk (INT_DISK = 3)  */
+	devAddrBase =  (memaddr) (0x40 + ((INT_DISK - 3) * 0x80) + (dnum * 0x10)); //Corretto, errore di esponente
+	status_word[INT_DISK-3][dnum] = *devAddrBase;
+	devAddrBase += 0x4;
+	*devAddrBase = DEV_C_ACK;
 	verhogen(&dev_sem[(INT_DISK-3)*DEV_PER_INT + dnum], 1);
       }
     else{
@@ -56,8 +59,10 @@ void interrupt_handler(void)
 #endif
 	dev_bitmap = (memaddr)0x6FE4;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	status_word[INT_TAPE-3][dnum] = devices[(INT_TAPE-3)+dnum]->status;
-	devices[(INT_TAPE-3)+dnum]->command = DEV_C_ACK;
+	devAddrBase = (memaddr) (0x40 + ((INT_TAPE - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	status_word[INT_TAPE-3][dnum] = *devAddrBase;
+	devAddrBase += 0x4;
+	*devAddrBase = DEV_C_ACK;
 	verhogen(&dev_sem[(INT_TAPE-3)*DEV_PER_INT + dnum], 1);
       }
       else{
@@ -67,9 +72,10 @@ void interrupt_handler(void)
 #endif
 	  dev_bitmap = (memaddr)0x6FE8;
 	  dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	  status_word[INT_UNUSED-3][dnum] =
-	    devices[(INT_UNUSED-3)+dnum]->status;
-	  devices[(INT_UNUSED-3)+dnum]->command = DEV_C_ACK;
+	  devAddrBase = (memaddr) (0x40 + ((INT_UNUSED - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	  status_word[INT_UNUSED-3][dnum] = *devAddrBase;
+	  devAddrBase += 0x4;
+	  *devAddrBase = DEV_C_ACK;
 	  verhogen(&dev_sem[(INT_UNUSED-3)*DEV_PER_INT + dnum], 1);
 	}
 	else{
@@ -79,9 +85,10 @@ void interrupt_handler(void)
 #endif
 	    dev_bitmap = (memaddr)0x6FEC;
 	    dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	    status_word[INT_PRINTER-3][dnum] =
-	      devices[(INT_PRINTER-3)+dnum]->status;
-	    devices[(INT_PRINTER-3)+dnum]->command = DEV_C_ACK;
+	    devAddrBase =  (memaddr) (0x40 + ((INT_PRINTER - 3) * 0x80) + (dnum * 0x10)); //Corretto
+	    status_word[INT_PRINTER-3][dnum] = *devAddrBase;
+	    devAddrBase += 0x4;
+	    *devAddrBase = DEV_C_ACK;
 	    verhogen(&dev_sem[(INT_PRINTER-3)*DEV_PER_INT + dnum], 1);
 	  }
 	  else{
@@ -95,27 +102,31 @@ void interrupt_handler(void)
 	      /* corrette, altrimenti la verhogen dovrebbe sbloccare  */
 	      /* un altro semaforo e il processo restare bloccato     */
 	      dnum = get_bit_num(find_dev_mask(*dev_bitmap));
+	      devAddrBase = (memaddr) (0x40 + ((INT_TERMINAL - 3) * 0x80) + (dnum * 0x10)); //Corretto
 	      /* read */
-	      if((terminals[dnum]->recv_status &  DEV_TRCV_S_CHARRECV)
+	      if((*devAddrBase &  DEV_TRCV_S_CHARRECV)
 		 == DEV_TRCV_S_CHARRECV){
 #ifdef DEBUG
 		tprint("Interrupt: terminal char recv\n");
 #endif
 		status_word[INT_TERMINAL-2][dnum] =
-		  terminals[dnum]->recv_status;
-		terminals[dnum]->recv_command = DEV_C_ACK;
+		  *devAddrBase;
+		devAddrBase += 0x4;
+		*devAddrBase = DEV_C_ACK;
 		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT +
 				  DEV_PER_INT + dnum], 1);
 	      }
 	      /* transmit */
-	      if((terminals[dnum]->transm_status & DEV_TTRS_S_CHARTRSM)
+	      devAddrBase += 0x8; //Punto a RecvStatus
+	      if((*devAddrBase & DEV_TTRS_S_CHARTRSM)
 		 == DEV_TTRS_S_CHARTRSM){
 #ifdef DEBUG
 		tprint("Interrupt: terminal char trsm\n");
 #endif
 		status_word[INT_TERMINAL-3][dnum] =
-		  terminals[dnum]->transm_status;
-		terminals[dnum]->transm_command = DEV_C_ACK;
+		  *devAddrBase;
+		devAddrBase += 0x4;
+		*devAddrBase = DEV_C_ACK;
 		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT + dnum], 1);
 	      }
 	    }
