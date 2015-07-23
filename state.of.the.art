@@ -15,3 +15,11 @@ provare a spostare questi due array nel file interrupts.c senza puntatori e
 usarli al posto della matrice status_word. Per calcolare ogni volta l'indirizzo
 corretto degli status register guardare la documentazione di umps a p. 44 e la
 documentazione di uarm a p. 15
+
+
+2)
+Inserito il puntatore a devAddrBase. Convertite tutte le operazioni usandolo. 
+La formula delle specifiche di umps da errore a compilazione (la prima costante è settata male).
+Domani controllo cosa può generarlo. Dai un occhio anche tu per sicurezza. 
+Aggiorno solo il file interrupts.c, creandolo nuovo (interrupts_v2.c)
+Nell'init lascio variabili e for.
