@@ -32,7 +32,7 @@ void idlec(void){
 void main(void){
   /* 1 */
   state_t *new_areas[4];
-  int i, addr = 0x40;
+  int i, addr = DEV_REG_START;
   pcb_t *first, *idle;
   state_t fproc;
 
@@ -85,11 +85,11 @@ void main(void){
     dev_sem[i] = 0;
   for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
      devices[i] = (dtpreg_t*)(addr);
-     addr += 0x10;
+     addr += DEV_REG_SIZE;
   }
   for(i=0; i<DEV_PER_INT; i++){
     terminals[i] = (termreg_t*)(addr);
-    addr += 0x10;
+    addr += DEV_REG_SIZE;
   }
 
   /* 5 */
