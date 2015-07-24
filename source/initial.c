@@ -20,8 +20,8 @@ struct list_head p_norm=LIST_HEAD_INIT(p_norm);
 struct list_head p_high=LIST_HEAD_INIT(p_high);
 struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
-//struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
-//struct termreg_t *terminals[DEV_PER_INT];
+struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
+struct termreg_t *terminals[DEV_PER_INT];
 
 extern void test();
 
@@ -64,7 +64,6 @@ void main(void){
     new_areas[i]->cpsr = STATUS_NULL;
     new_areas[i]->cpsr = new_areas[i]->cpsr | STATUS_SYS_MODE;
     new_areas[i]->cpsr = STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr);
-    //new_areas[i]->cpsr = STATUS_DISABLE_TIMER(new_areas[i]->cpsr);
   }
 
   /* 2 */
@@ -73,12 +72,6 @@ void main(void){
 #endif
   initPcbs();
   initASL();
-  
-  /* 3 */
-  /* p_low=LIST_HEAD_INIT(p_low); */
-  /* p_norm=LIST_HEAD_INIT(p_norm); */
-  /* p_high=LIST_HEAD_INIT(p_high); */
-  /* p_idle=LIST_HEAD_INIT(p_idle); */
 
   pc_count = 0;
   sb_count = 0;
@@ -90,14 +83,14 @@ void main(void){
 #endif
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
-  /*for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
+  for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
      devices[i] = (dtpreg_t*)(addr);
      addr += 0x10;
   }
   for(i=0; i<DEV_PER_INT; i++){
     terminals[i] = (termreg_t*)(addr);
     addr += 0x10;
-  }*/
+  }
 
   /* 5 */
 #ifdef DEBUG
@@ -107,23 +100,9 @@ void main(void){
   fproc.cpsr = STATUS_NULL;
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
   fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
-  //  fproc.cpsr = STATUS_ENABLE_TIMER(fproc.cpsr);
   fproc.sp = RAM_TOP - FRAME_SIZE;
   fproc.pc = (memaddr)test;
   create_process(&fproc, PRIO_NORM);
-  
-  /* if( (first = allocPcb()) == NULL) */
-  /*   PANIC(); */
-  /* first->p_s.cpsr = STATUS_NULL; */
-  /* first->p_s.cpsr = first->p_s.cpsr | STATUS_SYS_MODE */
-  /*   | STATUS_ENABLE_INT(first->p_s.cpsr) */
-  /*   | STATUS_ENABLE_TIMER(first->p_s.cpsr); */
-  /* first->p_s.sp = RAM_TOP - FRAMESIZE; */
-  /* first->p_s.pc = (memaddr)&test; */
-  /* first->prio = PRIO_NORM; */
-  /* insertProcQ(&p_norm, first); */
-  /* pc_count++; */
-  /* current = first; */
 
   /* 6 */
 #ifdef DEBUG
@@ -137,10 +116,8 @@ void main(void){
   idle->p_s.sp = RAM_TOP - FRAMESIZE;
   idle->p_s.pc = (memaddr)idlec;
   insertProcQ(&p_idle, idle);
-  /* a cosa puntano sp e pc? */
 
   /* 7 */
-  //  LDST(&fproc);
 #ifdef DEBUG
   tprint("Calling scheduler\n");
 #endif
