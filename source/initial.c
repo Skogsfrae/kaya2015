@@ -64,7 +64,6 @@ void main(void){
     new_areas[i]->cpsr = STATUS_NULL;
     new_areas[i]->cpsr = new_areas[i]->cpsr | STATUS_SYS_MODE;
     new_areas[i]->cpsr = STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr);
-    //new_areas[i]->cpsr = STATUS_DISABLE_TIMER(new_areas[i]->cpsr);
   }
 
   /* 2 */
@@ -75,11 +74,6 @@ void main(void){
   initASL();
   
   /* 3 */
-  /* p_low=LIST_HEAD_INIT(p_low); */
-  /* p_norm=LIST_HEAD_INIT(p_norm); */
-  /* p_high=LIST_HEAD_INIT(p_high); */
-  /* p_idle=LIST_HEAD_INIT(p_idle); */
-
   pc_count = 0;
   sb_count = 0;
   current = NULL;
@@ -107,23 +101,9 @@ void main(void){
   fproc.cpsr = STATUS_NULL;
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
   fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
-  //  fproc.cpsr = STATUS_ENABLE_TIMER(fproc.cpsr);
   fproc.sp = RAM_TOP - FRAME_SIZE;
   fproc.pc = (memaddr)test;
   create_process(&fproc, PRIO_NORM);
-  
-  /* if( (first = allocPcb()) == NULL) */
-  /*   PANIC(); */
-  /* first->p_s.cpsr = STATUS_NULL; */
-  /* first->p_s.cpsr = first->p_s.cpsr | STATUS_SYS_MODE */
-  /*   | STATUS_ENABLE_INT(first->p_s.cpsr) */
-  /*   | STATUS_ENABLE_TIMER(first->p_s.cpsr); */
-  /* first->p_s.sp = RAM_TOP - FRAMESIZE; */
-  /* first->p_s.pc = (memaddr)&test; */
-  /* first->prio = PRIO_NORM; */
-  /* insertProcQ(&p_norm, first); */
-  /* pc_count++; */
-  /* current = first; */
 
   /* 6 */
 #ifdef DEBUG
@@ -140,7 +120,6 @@ void main(void){
   /* a cosa puntano sp e pc? */
 
   /* 7 */
-  //  LDST(&fproc);
 #ifdef DEBUG
   tprint("Calling scheduler\n");
 #endif
