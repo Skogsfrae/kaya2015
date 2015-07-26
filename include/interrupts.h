@@ -1,8 +1,10 @@
 #ifndef INTERRUPTS_H
 #define INTERRUPTS_H
 
+#include <uARMconst.h>
+
 extern void interrupt_handler(void);
 
-extern unsigned int status_word[DEV_USED_INTS+1][DEV_PER_INT];
+extern unsigned int status_word[MAX_DEVICES];
 
 #endif
