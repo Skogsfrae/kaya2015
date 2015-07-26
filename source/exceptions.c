@@ -38,7 +38,7 @@ void copy_state(state_t *dest, state_t *src){
 }
 
 void syscall_handler(void){
-  unsigned int sys_num, arg1, arg2, arg3, ret_value, cause;
+  unsigned int sys_num, arg1, arg2, arg3, cause;
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)SYSBK_OLDAREA;
 
@@ -122,7 +122,10 @@ void syscall_handler(void){
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
   current->p_s.pc = current->p_s.lr;
-  LDST(&current->p_s);
+  if(current->state == WAITING)
+    scheduler();
+  else
+    LDST(&current->p_s);
 }
 
 void pgmtrap_handler(void){

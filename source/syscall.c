@@ -154,22 +154,18 @@ void verhogen(int *semaddr, int weight)
   *semaddr += weight;
   if((tmp = headBlocked(semaddr)) != NULL){
     if(tmp->sem_wait >= *semaddr){
-      //tprint("Wait io funge?\n");
       tmp->sem_wait = 0;
       outBlocked(tmp);
       tmp->state = READY;
       /* Adding to proper queue */
       switch(tmp->prio){
       case PRIO_LOW:
-	tprint("prio sbagliata\n");
 	insertProcQ(&p_low, tmp);
 	break;
       case PRIO_NORM:
-	//tprint("prio corretta\n");
 	insertProcQ(&p_norm, tmp);
 	break;
       case PRIO_HIGH:
-	tprint("prio sbagliata\n");
 	insertProcQ(&p_high, tmp);
 	break;
       }
@@ -181,16 +177,16 @@ void verhogen(int *semaddr, int weight)
 void passeren(int *semaddr, int weight)
 {
   if((*semaddr -= weight) < 0){
+    /* Non ci sono semafori liberi */
     if((insertBlocked(semaddr, current)) == TRUE){
-#ifdef DEBUG
-      tprint("Non ci sono semafori liberi\n");
-#endif //DEBUG
       PANIC();
     }
     current->state = WAITING;
     current->sem_wait = weight;
     sb_count++;
-    scheduler();
+    /* Tolta la chiamata allo scheduler. Concettualmente è sbagliato */
+    /* farlo chiamare da una system call                             */
+    //scheduler();
   }
 }
 
@@ -226,18 +222,21 @@ unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead)
   /* Passa al terminale di lettura */
   if(waitForTermRead)
     read = DEV_PER_INT;
-  passeren(&dev_sem[(intlNo-3)*DEV_PER_INT + read + dnum], 1);
+  passeren(&dev_sem[EXT_IL_INDEX(intlNo)*DEV_PER_INT + read + dnum], 1);
 
   /* La status word viene presa dalla matrice dichiarata */
   /* nel file interrupts.c                               */
-  if(intlNo == INT_TERMINAL){
-    if(waitForTermRead)
-      stat_word = status_word[INT_TERMINAL-2][dnum];
-    else
-      stat_word = status_word[INT_TERMINAL-3][dnum];
-  }
-  else
-    stat_word = status_word[(intlNo-3)][dnum];
+  /* if(intlNo == INT_TERMINAL){ */
+  /*   if(waitForTermRead) */
+  /*     stat_word = status_word[(INT_TERMINAL-2)*DEV_PER_INT + dnum]; */
+  /*   else */
+  /*     stat_word = status_word[EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT + dnum]; */
+  /* } */
+  /* else{ */
+  /*   stat_word = status_word[EXT_IL_INDEX(intlNo)*DEV_PER_INT + dnum]; */
+  /* } */
+
+  stat_word = status_word[EXT_IL_INDEX(intlNo)*DEV_PER_INT + read + dnum];
 
   return stat_word;
 }
