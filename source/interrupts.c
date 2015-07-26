@@ -11,7 +11,36 @@
 
 state_t *state = (state_t *)INT_OLDAREA;
 /* Numero di interrupt lines +1 (2 per i terminali) */
-unsigned int status_word[DEV_USED_INTS+1][DEV_PER_INT];
+unsigned int status_word[MAX_DEVICES];
+
+void dev_verhogen(int semaddr, unsigned int s_word)
+{
+  pcb_t *tmp;
+  dev_sem[semaddr]++;
+  if((tmp = headBlocked(&dev_sem[semaddr])) != NULL){
+    if(tmp->sem_wait >= dev_sem[semaddr]){
+      tmp->sem_wait = 0;
+      outBlocked(tmp);
+      tmp->state = READY;
+      /* Adding to proper queue */
+      switch(tmp->prio){
+      case PRIO_LOW:
+	insertProcQ(&p_low, tmp);
+	break;
+      case PRIO_NORM:
+	insertProcQ(&p_norm, tmp);
+	break;
+      case PRIO_HIGH:
+	insertProcQ(&p_high, tmp);
+	break;
+      }
+      sb_count--;
+      tmp->p_s.a1 = s_word;
+    }
+  }
+  else
+    status_word[semaddr] = s_word;
+}
 
 void interrupt_handler(void)
 {
@@ -20,103 +49,71 @@ void interrupt_handler(void)
   unsigned int cause, dnum;
 
   kernel_time1 = getTODLO();
-
   copy_state(&current->p_s, state);
   current->p_s.pc = current->p_s.lr - WS;
-
   cause = getCAUSE();
-#ifdef DEBUG
-  tprint("Interrupt\n");
-#endif
   
   if(CAUSE_IP_GET(cause, INT_TIMER)){
-#ifdef DEBUG
-    tprint("Interrupt: gestione timer\n");
-#endif
     setSTATUS(STATUS_DISABLE_TIMER(getSTATUS()));
     scheduler();
   }
   else{
       if(CAUSE_IP_GET(cause, INT_DISK)){
-#ifdef DEBUG
-    tprint("Interrupt: gestione disk\n");
-#endif
-	dev_bitmap = (memaddr)0x6FE0;
+	dev_bitmap = (memaddr)CDEV_BITMAP_ADDR(INT_DISK);//0x6FE0;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
 	/* -3 perché negli array dei device/semafori si parte da **
 	** disk (INT_DISK = 3)                                   */
-	status_word[INT_DISK-3][dnum] = devices[(INT_DISK-3)+dnum]->status;
-	devices[(INT_DISK-3)+dnum]->command = DEV_C_ACK;
-	verhogen(&dev_sem[(INT_DISK-3)*DEV_PER_INT + dnum], 1);
+	/* status_word[EXT_IL_INDEX(INT_DISK)][dnum] = devices[EXT_IL_INDEX(INT_DISK)][dnum]->status; */
+	devices[EXT_IL_INDEX(INT_DISK)][dnum]->command = DEV_C_ACK;
+	dev_verhogen(EXT_IL_INDEX(INT_DISK)*DEV_PER_INT + dnum, devices[EXT_IL_INDEX(INT_DISK)][dnum]->status);
       }
     else{
       if(CAUSE_IP_GET(cause, INT_TAPE)){
-#ifdef DEBUG
-	tprint("Interrupt: gestione tape\n");
-#endif
-	dev_bitmap = (memaddr)0x6FE4;
+	dev_bitmap = (memaddr)CDEV_BITMAP_ADDR(INT_TAPE);//0x6FE4;
 	dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	status_word[INT_TAPE-3][dnum] = devices[(INT_TAPE-3)+dnum]->status;
-	devices[(INT_TAPE-3)+dnum]->command = DEV_C_ACK;
-	verhogen(&dev_sem[(INT_TAPE-3)*DEV_PER_INT + dnum], 1);
+	/* status_word[EXT_IL_INDEX(INT_TAPE)][dnum] = devices[EXT_IL_INDEX(INT_TAPE)][dnum]->status; */
+	devices[EXT_IL_INDEX(INT_TAPE)][dnum]->command = DEV_C_ACK;
+	dev_verhogen(EXT_IL_INDEX(INT_TAPE)*DEV_PER_INT + dnum, devices[EXT_IL_INDEX(INT_TAPE)][dnum]->status);
       }
       else{
 	if(CAUSE_IP_GET(cause, INT_UNUSED)){
-#ifdef DEBUG
-	  tprint("Interrupt: gestione unused\n");
-#endif
-	  dev_bitmap = (memaddr)0x6FE8;
+	  dev_bitmap = (memaddr)CDEV_BITMAP_ADDR(INT_UNUSED);//0x6FE8;
 	  dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	  status_word[INT_UNUSED-3][dnum] =
-	    devices[(INT_UNUSED-3)+dnum]->status;
-	  devices[(INT_UNUSED-3)+dnum]->command = DEV_C_ACK;
-	  verhogen(&dev_sem[(INT_UNUSED-3)*DEV_PER_INT + dnum], 1);
+	  /* status_word[EXT_IL_INDEX(INT_UNUSED)][dnum] = */
+	  /*   devices[EXT_IL_INDEX(INT_UNUSED)][dnum]->status; */
+	  devices[EXT_IL_INDEX(INT_UNUSED)][dnum]->command = DEV_C_ACK;
+	  dev_verhogen(EXT_IL_INDEX(INT_UNUSED)*DEV_PER_INT + dnum,devices[EXT_IL_INDEX(INT_UNUSED)][dnum]->status);
 	}
 	else{
 	  if(CAUSE_IP_GET(cause, INT_PRINTER)){
-#ifdef DEBUG
-	    tprint("Interrupt: gestione printer\n");
-#endif
-	    dev_bitmap = (memaddr)0x6FEC;
+	    dev_bitmap = (memaddr)CDEV_BITMAP_ADDR(INT_PRINTER);//0x6FEC;
 	    dnum = get_bit_num(get_bit_mask(*dev_bitmap));
-	    status_word[INT_PRINTER-3][dnum] =
-	      devices[(INT_PRINTER-3)+dnum]->status;
-	    devices[(INT_PRINTER-3)+dnum]->command = DEV_C_ACK;
-	    verhogen(&dev_sem[(INT_PRINTER-3)*DEV_PER_INT + dnum], 1);
+	    /* status_word[EXT_IL_INDEX(INT_PRINTER)][dnum] = */
+	    /*   devices[EXT_IL_INDEX(INT_PRINTER)][dnum]->status; */
+	    devices[EXT_IL_INDEX(INT_PRINTER)][dnum]->command = DEV_C_ACK;
+	    dev_verhogen(EXT_IL_INDEX(INT_PRINTER)*DEV_PER_INT + dnum, devices[EXT_IL_INDEX(INT_PRINTER)][dnum]->status);
 	  }
 	  else{
 	    /* Gestione dei terminali */
 	    if(CAUSE_IP_GET(cause, INT_TERMINAL)){
-#ifdef DEBUG
-	      tprint("Interrupt: gestione terminal \n");
-#endif
-	      dev_bitmap = (memaddr)0x6FF0;
+	      dev_bitmap = (memaddr)CDEV_BITMAP_ADDR(INT_TERMINAL);//0x6FF0;
 	      /* DEBUG INFO le funzioni di gestione delle bitmap sono */
-	      /* corrette, altrimenti la verhogen dovrebbe sbloccare  */
+	      /* corrette, altrimenti la dev_verhogen dovrebbe sbloccare  */
 	      /* un altro semaforo e il processo restare bloccato     */
 	      dnum = get_bit_num(find_dev_mask(*dev_bitmap));
 	      /* read */
-	      if((terminals[dnum]->recv_status &  DEV_TRCV_S_CHARRECV)
-		 == DEV_TRCV_S_CHARRECV){
-#ifdef DEBUG
-		tprint("Interrupt: terminal char recv\n");
-#endif
-		status_word[INT_TERMINAL-2][dnum] =
-		  terminals[dnum]->recv_status;
+	      if((terminals[dnum]->recv_status &  DEV_TRCV_S_CHARRECV) == DEV_TRCV_S_CHARRECV){
+		/* status_word[INT_TERMINAL-2][dnum] = */
+		/*   terminals[dnum]->recv_status; */
 		terminals[dnum]->recv_command = DEV_C_ACK;
-		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT +
-				  DEV_PER_INT + dnum], 1);
+		dev_verhogen(EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT + DEV_PER_INT + dnum, terminals[dnum]->recv_status);
 	      }
 	      /* transmit */
-	      if((terminals[dnum]->transm_status & DEV_TTRS_S_CHARTRSM)
-		 == DEV_TTRS_S_CHARTRSM){
-#ifdef DEBUG
-		tprint("Interrupt: terminal char trsm\n");
-#endif
-		status_word[INT_TERMINAL-3][dnum] =
-		  terminals[dnum]->transm_status;
+	      if((terminals[dnum]->transm_status & DEV_TTRS_S_CHARTRSM) == DEV_TTRS_S_CHARTRSM){
+		/* status_word[EXT_IL_INDEX(INT_TERMINAL)][dnum] = */
+		/*   terminals[dnum]->transm_status; */
 		terminals[dnum]->transm_command = DEV_C_ACK;
-		verhogen(&dev_sem[(INT_TERMINAL-3)*DEV_PER_INT + dnum], 1);
+		dev_verhogen(EXT_IL_INDEX(INT_TERMINAL)*DEV_PER_INT + dnum, terminals[dnum]->transm_status);
 	      }
 	    }
 	  }
