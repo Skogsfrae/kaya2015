@@ -20,7 +20,7 @@ struct list_head p_norm=LIST_HEAD_INIT(p_norm);
 struct list_head p_high=LIST_HEAD_INIT(p_high);
 struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
-struct dtpreg_t *devices[(DEV_USED_INTS -1)*DEV_PER_INT];
+struct dtpreg_t *devices[DEV_USED_INTS -1][DEV_PER_INT];
 struct termreg_t *terminals[DEV_PER_INT];
 
 extern void test();
@@ -32,7 +32,7 @@ void idlec(void){
 void main(void){
   /* 1 */
   state_t *new_areas[4];
-  int i, addr = DEV_REG_START;
+  int i, j, addr = DEV_REG_START;
   pcb_t *first, *idle;
   state_t fproc;
 
@@ -83,14 +83,12 @@ void main(void){
 #endif
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
-  for(i=0; i<(DEV_USED_INTS - 1)*DEV_PER_INT; i++){
-     devices[i] = (dtpreg_t*)(addr);
-     addr += DEV_REG_SIZE;
+  for(i=0; i<(DEV_USED_INTS - 1); i++){
+    for(j=0; j<DEV_PER_INT; j++)
+      devices[i][j] = (memaddr)DEV_REG_ADDR(i+3, j);
   }
-  for(i=0; i<DEV_PER_INT; i++){
-    terminals[i] = (termreg_t*)(addr);
-    addr += DEV_REG_SIZE;
-  }
+  for(i=0; i<DEV_PER_INT; i++)
+    terminals[i] = (memaddr)DEV_REG_ADDR(INT_TERMINAL, i);
 
   /* 5 */
 #ifdef DEBUG
