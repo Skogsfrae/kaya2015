@@ -236,9 +236,11 @@ unsigned int wait_for_io(int intlNo, int dnum, int waitForTermRead)
   /*   stat_word = status_word[EXT_IL_INDEX(intlNo)*DEV_PER_INT + dnum]; */
   /* } */
 
-  stat_word = status_word[EXT_IL_INDEX(intlNo)*DEV_PER_INT + read + dnum];
-
-  return stat_word;
+  if(current->state != WAITING){
+    stat_word = status_word[EXT_IL_INDEX(intlNo)*DEV_PER_INT + read + dnum];
+    
+    return stat_word;
+  }
 }
 
 pid_t get_pid(void)

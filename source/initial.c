@@ -20,8 +20,8 @@ struct list_head p_norm=LIST_HEAD_INIT(p_norm);
 struct list_head p_high=LIST_HEAD_INIT(p_high);
 struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
-struct dtpreg_t *devices[DEV_USED_INTS -1][DEV_PER_INT];
-struct termreg_t *terminals[DEV_PER_INT];
+/* struct dtpreg_t *devices[DEV_USED_INTS -1][DEV_PER_INT]; */
+/* struct termreg_t *terminals[DEV_PER_INT]; */
 
 extern void test();
 
@@ -35,10 +35,6 @@ void main(void){
   int i, j, addr = DEV_REG_START;
   pcb_t *first, *idle;
   state_t fproc;
-
-#ifdef DEBUG
-  tprint("Populating areas\n");
-#endif
 
   for(i=0; i<4; i++){
     switch(i){
@@ -67,9 +63,6 @@ void main(void){
   }
 
   /* 2 */
-#ifdef DEBUG
-  tprint("Initializing pcbs and asl\n");
-#endif
   initPcbs();
   initASL();
 
@@ -78,23 +71,16 @@ void main(void){
   current = NULL;
 
   /* 4 */
-#ifdef DEBUG
-  tprint("Initializing dev semaphores\n");
-#endif
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
-  for(i=0; i<(DEV_USED_INTS - 1); i++){
-    for(j=0; j<DEV_PER_INT; j++)
-      devices[i][j] = (memaddr)DEV_REG_ADDR(i+3, j);
-  }
-  for(i=0; i<DEV_PER_INT; i++)
-    terminals[i] = (memaddr)DEV_REG_ADDR(INT_TERMINAL, i);
+  /* for(i=0; i<(DEV_USED_INTS - 1); i++){ */
+  /*   for(j=0; j<DEV_PER_INT; j++) */
+  /*     devices[i][j] = (memaddr)DEV_REG_ADDR(i+3, j); */
+  /* } */
+  /* for(i=0; i<DEV_PER_INT; i++) */
+  /*   terminals[i] = (memaddr)DEV_REG_ADDR(INT_TERMINAL, i); */
 
   /* 5 */
-#ifdef DEBUG
-  tprint("Creating first process\n");
-#endif
-
   fproc.cpsr = STATUS_NULL;
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
   fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
@@ -103,9 +89,6 @@ void main(void){
   create_process(&fproc, PRIO_NORM);
 
   /* 6 */
-#ifdef DEBUG
-  tprint("Allocating idle process\n");
-#endif
   if( (idle = allocPcb()) == NULL)
     PANIC();
   idle->p_s.cpsr = STATUS_NULL;
@@ -116,8 +99,5 @@ void main(void){
   insertProcQ(&p_idle, idle);
 
   /* 7 */
-#ifdef DEBUG
-  tprint("Calling scheduler\n");
-#endif
   scheduler();
 }

@@ -140,7 +140,7 @@ void print(char *msg) {
 	devregtr * base = (devregtr *) (TERM0ADDR);
 	devregtr status;
 	
-	SYSCALL(PASSEREN, (int)&term_mut, 1, 0);    /* get term_mut lock */
+	SYSCALL(PASSEREN, (int)&term_mut, 1, 0);				/* get term_mut lock */
 	
 	while (*s != '\0') {
 	  /* Put "transmit char" command+char in term0 register (3rd word). This 
