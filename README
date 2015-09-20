@@ -1,3 +1,34 @@
-Kaya 2015
+KAYA 2015
 
-To build phase1 simply run make in the main directory.
+This project was made by means of studying different versiona of Linux kernel from which some problems solutions were taken.
+
+
+COMPILING
+
+There are two makefile scripts: the default one (Makefile) compiles and links the project at phase2 stage; the second one (p1Makefile) compiles and links the project at phase1 stage.
+
+To compile phase1 run: make -f p1Makefile
+To compile phase2 simply run: make
+To clear all object and executable files run: make clean
+
+
+STRUCTURES
+
+The pcb_t structure was extended with additional fields:
+- 4 fields to handle times
+- 1 field for the specified exception vector
+- 1 boolean field to mark if the process called a SYS5
+- 1 field to show which priority queue the pcb belongs to
+- 1 field to show the current process state (READY, RUNNING, WAITING)
+- 1 field to save the weight of the process on a semaphore
+
+
+PROCESS CREATION
+
+In this Kaya implementation, pids already used can be reassigned. This is done by mean of two bitmaps (one which maps used pids and the other one that maps free pids) and two variables that stores last assigned pid and the last freed pid. Pids and the corresponding pcbs are mapped on a vector of pcb pointers where the vetor index is the pid itself.
+
+
+ADDITIONAL LIBRARY
+
+An additional library was written to host bitmap handling functions both for pid allocation/deallocation and to handle the pending device bitmap.
+

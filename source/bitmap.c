@@ -23,6 +23,7 @@ int get_bit_mask(int bit){
   return mask <<= bit;
 }
 
+/* Like get_bit_mask(), but specific for the device bitmap */
 int find_dev_mask(int dev){
   int mask = 1;
   int res = 0;
@@ -30,7 +31,6 @@ int find_dev_mask(int dev){
   while(mask < dev){
     if(mask & dev)
       break;
-      //res = mask;
     mask <<= 1;
   }
 

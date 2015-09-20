@@ -8,11 +8,10 @@
 #include <const.h>
 #include <arch.h>
 
-//#define DEBUG
-
 void pgmtrap_handler(void);
 
-void copy_state(state_t *dest, state_t *src){
+void copy_state(state_t *dest, state_t *src)
+{
   dest->a1 = src->a1;
   dest->a2 = src->a2;
   dest->a3 = src->a3;
@@ -37,98 +36,104 @@ void copy_state(state_t *dest, state_t *src){
   dest->TOD_Low = src->TOD_Low;
 }
 
-void syscall_handler(void){
+void syscall_handler(void)
+{
   unsigned int sys_num, arg1, arg2, arg3, cause;
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)SYSBK_OLDAREA;
 
-  /* Used to compute kernel time */
+  /* Compute kernel time */
   kernel_time1 = getTODLO();
   copy_state(&current->p_s, state);
-  cause = state->CP15_Cause; //getCAUSE();
+  cause = state->CP15_Cause;
   
   /* Breakpoint or syscall?? */
-  switch(CAUSE_EXCCODE_GET(cause)){
-  case EXC_BREAKPOINT:
-    /* If not excvector and no SYS5, genocidio again */
-    if(!current->bool_excvector){
-      terminate_process(current->pid);
-      scheduler();
-    }
-    break;
-  case EXC_SYSCALL:
-    // Passing to program trap
-    if(!(current->p_s.cpsr & STATUS_SYS_MODE)){
-      CAUSE_EXCCODE_SET(current->p_s.CP15_Cause,
-			EXC_RESERVEDINSTR);
-      copy_state((state_t *)PGMTRAP_OLDAREA, &current->p_s);
-      kernel_time2 = getTODLO();
-      current->kernel_time += kernel_time2 - kernel_time1;
-      pgmtrap_handler();
-    }
+  switch(CAUSE_EXCCODE_GET(cause))
+    {
+    case EXC_BREAKPOINT:
+      /* If not excvector and no SYS5, kill everything */
+      if(!current->bool_excvector)
+	{
+	  terminate_process(current->pid);
+	  scheduler();
+	}
+      break;
+    case EXC_SYSCALL:
+      /* Passing to program trap */
+      if(!(current->p_s.cpsr & STATUS_SYS_MODE))
+	{
+	  CAUSE_EXCCODE_SET(current->p_s.CP15_Cause, EXC_RESERVEDINSTR);
+	  copy_state((state_t *)PGMTRAP_OLDAREA, &current->p_s);
+	  kernel_time2 = getTODLO();
+	  current->kernel_time += kernel_time2 - kernel_time1;
+	  pgmtrap_handler();
+	}
     
-    /* Take sys_num and args */
-    sys_num = state->a1;
-    arg1 = state->a2;
-    arg2 = state->a3;
-    arg3 = state->a4;
+      /* Take sys_num and args */
+      sys_num = state->a1;
+      arg1 = state->a2;
+      arg2 = state->a3;
+      arg3 = state->a4;
 
-    // Non existing syscall
-    if(sys_num > SYSCALL_MAX || sys_num < 0)
-      PANIC();
+      /* Non existing syscall */
+      if(sys_num > SYSCALL_MAX || sys_num < 0)
+	PANIC();
 
-    /* Syscall dispatch */
-    switch(sys_num){
-    case CREATEPROCESS:
-      current->p_s.a1 = create_process((memaddr)arg1, (priority_enum)arg2);
-      break;
-    case TERMINATEPROCESS:
-      terminate_process(arg1);
-      break;
-    case VERHOGEN:
-      verhogen((int*)arg1, arg2);
-      break;
-    case PASSEREN:
-      passeren((int *)arg1, arg2);
-      break;
-    case SPECTRAPVEC:
-      specify_exception_state_vector((memaddr)arg1);
-      break;
-    case GETCPUTIME:
-      get_cpu_time((memaddr)arg1, (memaddr)arg2);
-      break;
-    case WAITCLOCK:
-      wait_for_clock();
-      break;
-    case WAITIO:
-      current->p_s.a1 = wait_for_io(arg1, arg2, arg3);
-      break;
-    case GETPID:
-      current->p_s.a1 = get_pid();
-      break;
-    case GETPPID:
-      current->p_s.a1 = get_ppid();
+      /* Syscall dispatch */
+      switch(sys_num)
+	{
+	case CREATEPROCESS:
+	  current->p_s.a1 = create_process((memaddr)arg1, (priority_enum)arg2);
+	  break;
+	case TERMINATEPROCESS:
+	  terminate_process(arg1);
+	  break;
+	case VERHOGEN:
+	  verhogen((int*)arg1, arg2);
+	  break;
+	case PASSEREN:
+	  passeren((int *)arg1, arg2);
+	  break;
+	case SPECTRAPVEC:
+	  specify_exception_state_vector((memaddr)arg1);
+	  break;
+	case GETCPUTIME:
+	  get_cpu_time((memaddr)arg1, (memaddr)arg2);
+	  break;
+	case WAITCLOCK:
+	  wait_for_clock();
+	  break;
+	case WAITIO:
+	  current->p_s.a1 = wait_for_io(arg1, arg2, arg3);
+	  break;
+	case GETPID:
+	  current->p_s.a1 = get_pid();
+	  break;
+	case GETPPID:
+	  current->p_s.a1 = get_ppid();
+	  break;
+	default:
+	  PANIC();
+	  break;
+	}
       break;
     default:
       PANIC();
       break;
     }
-    break;
-  default:
-    PANIC();
-    break;
-  }
 
   kernel_time2 = getTODLO();
   current->kernel_time += kernel_time2 - kernel_time1;
   current->p_s.pc = current->p_s.lr;
+  /* If current is waiting for i/o, then call scheduler */
   if(current->state == WAITING)
     scheduler();
   else
     LDST(&current->p_s);
 }
 
-void pgmtrap_handler(void){
+void pgmtrap_handler(void)
+{
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)PGMTRAP_OLDAREA;
   unsigned int cause;
@@ -138,11 +143,12 @@ void pgmtrap_handler(void){
     HALT();
 
   kernel_time1 = getTODLO();
-  /* Olocausto again */
-  if(!current->bool_excvector){
-    terminate_process(current->pid);
-    scheduler();
-  }
+  /* Kill everything */
+  if(!current->bool_excvector)
+    {
+      terminate_process(current->pid);
+      scheduler();
+    }
   
   copy_state(&current->p_s, state);
   kernel_time2 = getTODLO();
@@ -150,16 +156,18 @@ void pgmtrap_handler(void){
   LDST(&current->p_s);
 }
 
-void tlb_handler(void){
+void tlb_handler(void)
+{
   cputime_t kernel_time1, kernel_time2;
   state_t *state = (state_t *)TLB_OLDAREA;
 
   kernel_time1 = getTODLO();
-  /* Olocausto again */
-  if(!current->bool_excvector){
-    terminate_process(current->pid);
-    scheduler();
-  }
+  /* Kill everything */
+  if(!current->bool_excvector)
+    {
+      terminate_process(current->pid);
+      scheduler();
+    }
   
   copy_state(&current->p_s, state);
   kernel_time2 = getTODLO();

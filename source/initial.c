@@ -10,8 +10,6 @@
 #include <exceptions.h>
 #include <interrupts.h>
 
-//#define DEBUG
-
 pcb_t *current;
 int pc_count;
 int sb_count;
@@ -20,67 +18,64 @@ struct list_head p_norm=LIST_HEAD_INIT(p_norm);
 struct list_head p_high=LIST_HEAD_INIT(p_high);
 struct list_head p_idle=LIST_HEAD_INIT(p_idle);
 int dev_sem[MAX_DEVICES];
-/* struct dtpreg_t *devices[DEV_USED_INTS -1][DEV_PER_INT]; */
-/* struct termreg_t *terminals[DEV_PER_INT]; */
 
 extern void test();
 
-void idlec(void){
+void idlec(void)
+{
   while(1);
 }
 
-void main(void){
-  /* 1 */
+void main(void)
+{
   state_t *new_areas[4];
   int i, j, addr = DEV_REG_START;
   pcb_t *first, *idle;
   state_t fproc;
 
-  for(i=0; i<4; i++){
-    switch(i){
-    case 0:
-      new_areas[i] = (state_t*)INT_NEWAREA;
-      new_areas[i]->pc = (memaddr)interrupt_handler;
-      break;
-    case 1:
-      new_areas[i] = (state_t*)TLB_NEWAREA;
-      new_areas[i]->pc = (memaddr)tlb_handler;
-      break;
-    case 2:
-      new_areas[i] = (state_t*)PGMTRAP_NEWAREA;
-      new_areas[i]->pc = (memaddr)pgmtrap_handler;
-      break;
-    case 3:
-      new_areas[i] = (state_t*)SYSBK_NEWAREA;
-      new_areas[i]->pc = (memaddr)syscall_handler;
-      break;
+  /* 1 - Populating the four New Areas */
+  for(i=0; i<4; i++)
+    {
+      switch(i)
+	{
+	case 0:
+	  new_areas[i] = (state_t*)INT_NEWAREA;
+	  new_areas[i]->pc = (memaddr)interrupt_handler;
+	  break;
+	case 1:
+	  new_areas[i] = (state_t*)TLB_NEWAREA;
+	  new_areas[i]->pc = (memaddr)tlb_handler;
+	  break;
+	case 2:
+	  new_areas[i] = (state_t*)PGMTRAP_NEWAREA;
+	  new_areas[i]->pc = (memaddr)pgmtrap_handler;
+	  break;
+	case 3:
+	  new_areas[i] = (state_t*)SYSBK_NEWAREA;
+	  new_areas[i]->pc = (memaddr)syscall_handler;
+	  break;
+	}
+
+      new_areas[i]->sp = RAM_TOP;
+      new_areas[i]->cpsr = STATUS_NULL;
+      new_areas[i]->cpsr = new_areas[i]->cpsr | STATUS_SYS_MODE;
+      new_areas[i]->cpsr = STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr);
     }
 
-    new_areas[i]->sp = RAM_TOP;
-    new_areas[i]->cpsr = STATUS_NULL;
-    new_areas[i]->cpsr = new_areas[i]->cpsr | STATUS_SYS_MODE;
-    new_areas[i]->cpsr = STATUS_ALL_INT_DISABLE(new_areas[i]->cpsr);
-  }
-
-  /* 2 */
+  /* 2 - Initializing Level 2 data structures */
   initPcbs();
   initASL();
 
+  /* 3 - Initializing nucleus maintained variables */
   pc_count = 0;
   sb_count = 0;
   current = NULL;
 
-  /* 4 */
+  /* 4 - Initializing nucleus semaphores */
   for(i=0; i<MAX_DEVICES; i++)
     dev_sem[i] = 0;
-  /* for(i=0; i<(DEV_USED_INTS - 1); i++){ */
-  /*   for(j=0; j<DEV_PER_INT; j++) */
-  /*     devices[i][j] = (memaddr)DEV_REG_ADDR(i+3, j); */
-  /* } */
-  /* for(i=0; i<DEV_PER_INT; i++) */
-  /*   terminals[i] = (memaddr)DEV_REG_ADDR(INT_TERMINAL, i); */
 
-  /* 5 */
+  /* 5 - Instantiating the first process */
   fproc.cpsr = STATUS_NULL;
   fproc.cpsr = fproc.cpsr | STATUS_SYS_MODE;
   fproc.cpsr = STATUS_ALL_INT_ENABLE(fproc.cpsr);
@@ -88,7 +83,7 @@ void main(void){
   fproc.pc = (memaddr)test;
   create_process(&fproc, PRIO_NORM);
 
-  /* 6 */
+  /* 6 - Setting up idle process */
   if( (idle = allocPcb()) == NULL)
     PANIC();
   idle->p_s.cpsr = STATUS_NULL;
@@ -98,6 +93,6 @@ void main(void){
   idle->p_s.pc = (memaddr)idlec;
   insertProcQ(&p_idle, idle);
 
-  /* 7 */
+  /* 7 - Calling scheduler */
   scheduler();
 }
